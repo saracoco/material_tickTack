@@ -52,4 +52,15 @@ rsconnect/
 .DS_Store
 .quarto
 docs
-inst/doc
+inst/do
+
+
+# Images #
+##################
+*.png
+*.pdf
+
+# Simulation rresults
+results/*.rds
+plots/*.pdf
+
