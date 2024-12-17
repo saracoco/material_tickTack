@@ -1,6 +1,6 @@
-source("./convert_to_vcf.R")
-source("./convert_to_granges.R")
-source("./get_simulation_tickTack.R")
+source("../scripts/convert_to_vcf.R")
+source("../scripts/convert_to_granges.R")
+source("../scripts/get_simulation_tickTack.R")
 library(ggplot2)
 
 simulation_tickTack = function (n_clocks=3, 
@@ -56,7 +56,7 @@ simulation_tickTack = function (n_clocks=3,
   for (i in 1:n_clocks){
     p[[i]] <- tickTack::plot_timing_h(results_simulated, i, split_contiguous_segments = FALSE) + ggplot2::ggtitle(paste0("K = ", i))
   }
-  png(filename="./plots/tickTaxk_multiple.png", height=1000, width=700)
+  png(filename="./plots/tickTack_multiple.png", height=1000, width=700)
   plot_tickTack <- gridExtra::grid.arrange(grobs = p, nrow=n_clocks)  #add global title
   dev.off()
   plot_tickTack <- p[[best_K]]

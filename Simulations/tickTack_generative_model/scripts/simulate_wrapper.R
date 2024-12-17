@@ -28,11 +28,13 @@ library(dplyr)
 library(tickTack)
 library(tibble)
 
-source("simulation_tickTack.R")
+source("../scripts/simulation_tickTack.R")
 
 original_dir <- getwd()
+cat(original_dir)
 self_name = as.character(paste0("/tickTack_sim_",purity,"_",coverage,"_",n_clocks,"_",n_events,"/",seed))
 new_dir = paste0(original_dir,self_name)
+cat(new_dir)
 setwd(new_dir)
 
 

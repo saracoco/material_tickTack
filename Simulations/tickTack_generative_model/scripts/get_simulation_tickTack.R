@@ -1,4 +1,4 @@
-source("./simulate_functions.R") 
+source("../scripts/simulate_functions.R") 
 
 get_simulation_tickTack = function(number_clocks, number_events, purity, coverage, epsilon, seed = 123, vector_karyo = c("2:0", "2:1", "2:2")) {
   
