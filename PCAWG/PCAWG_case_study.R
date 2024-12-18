@@ -19,7 +19,7 @@ library(dplyr)
 
 library(tibble)
 
-tolerance = 0.001
+tolerance = 0.0001
 # samples_metadata <- readRDS("./samples_info.rds")
 # load data
 
@@ -68,7 +68,7 @@ lapply(vector_names, function(s){
   x <- tickTack::fit_h(x, 
                        max_attempts=2, 
                        INIT=TRUE, 
-                       tolerance = 0.0001,
+                       tolerance = tolerance,
                        initial_iter = 200,
                        grad_samples=10,
                        elbo_samples=10)
