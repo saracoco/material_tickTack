@@ -20,6 +20,9 @@ library(dplyr)
 library(tibble)
 
 tolerance = 0.0001
+iter = 200
+grad_samples = 10
+elbo_samples = 100
 # samples_metadata <- readRDS("./samples_info.rds")
 # load data
 
@@ -69,9 +72,9 @@ lapply(vector_names, function(s){
                        max_attempts=2, 
                        INIT=TRUE, 
                        tolerance = tolerance,
-                       initial_iter = 200,
-                       grad_samples=10,
-                       elbo_samples=10)
+                       initial_iter = iter,
+                       grad_samples=grad_samples,
+                       elbo_samples=elbo_samples)
   
   
   

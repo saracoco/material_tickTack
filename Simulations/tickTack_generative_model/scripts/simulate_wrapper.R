@@ -56,8 +56,8 @@ saveRDS(res$res_tickTack, "results/res_tickTack.rds")
 saveRDS(res$res_SingleTT, "results/res_SingleTT.rds")
 saveRDS(res$compare_assignment, "results/compare_assignment.rds")
 
-ggsave("plots/plot_Muttime.png", plot= res$plot_Muttime)
-ggsave("plots/plot_SingleTT.png", plot= res$plot_SingleTT)
-ggsave("plots/plot_tickTack.png", plot= res$plot_tickTack)
+# ggsave("plots/plot_Muttime.png", plot= res$plot_MutTime)
+ggsave("plots/plot_SingleTT.png", plot= res$plot_SingleTT, height=5, width=10)
+ggsave("plots/plot_tickTack.png", plot= res$plot_tickTack, height=5, width=10)
 
   
