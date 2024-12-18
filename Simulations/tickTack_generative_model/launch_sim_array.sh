@@ -11,7 +11,7 @@
 #SBATCH --error=tickTack_sim_err_%A_%a
 #SBATCH --array=1-3
 
-module load R/4.4.1
+module load r
 echo $SLURM_ARRAY_TASK_ID
 
 cd results
