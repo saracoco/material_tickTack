@@ -3,10 +3,12 @@
 .libPaths(new="~/R/rstudio_v3/") 
 library(tickTack)
 
-spath <-  "../../../data"
+
+set.seed(seed=123)
+spath <-  "../../data"
 sfile <-  "clonal_analysis_PCAWG.tar.gz"
 
-outputdir <- "/orfeo/cephfs/scratch/cdslab/scocomello/Simulations_tickTack"
+outputdir <- "../../data"
 data <- untar(file.path(spath,sfile), exdir = outputdir)
 
 library(dplyr)
@@ -17,20 +19,21 @@ library(dplyr)
 
 library(tibble)
 
-tolerance = 0.01
+tolerance = 0.001
 # samples_metadata <- readRDS("./samples_info.rds")
 # load data
 
-vector_names <- list.files("../../../data/clonal_analysis_PCAWG/")
+vector_names <- list.files("../../data/clonal_analysis_PCAWG/")
 
 
 # s <- vector_names[1]
+
 
 lapply(vector_names, function(s){
   
   tryCatch({
   
-  fit <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/Simulations_tickTack/clonal_analysis_PCAWG/",s,"/fit.rds"))
+  fit <- readRDS(paste0("../../data/clonal_analysis_PCAWG/",s,"/fit.rds"))
   original_dir <- getwd()
   
   
@@ -65,7 +68,10 @@ lapply(vector_names, function(s){
   x <- tickTack::fit_h(x, 
                        max_attempts=2, 
                        INIT=TRUE, 
-                       tolerance = tolerance)
+                       tolerance = 0.0001,
+                       initial_iter = 200,
+                       grad_samples=10,
+                       elbo_samples=10)
   
   
   
