@@ -3,7 +3,7 @@
 .libPaths(new="~/R/rstudio_v3/") 
 library(tickTack)
 
-spath <-  "/orfeo/cephfs/scratch/cdslab/scocomello/Simulations_tickTack"
+spath <-  "../../../data"
 sfile <-  "clonal_analysis_PCAWG.tar.gz"
 
 outputdir <- "/orfeo/cephfs/scratch/cdslab/scocomello/Simulations_tickTack"
@@ -21,7 +21,7 @@ tolerance = 0.01
 # samples_metadata <- readRDS("./samples_info.rds")
 # load data
 
-vector_names <- list.files("/orfeo/cephfs/scratch/cdslab/scocomello/Simulations_tickTack/clonal_analysis_PCAWG/")
+vector_names <- list.files("../../../data/clonal_analysis_PCAWG/")
 
 
 # s <- vector_names[1]
