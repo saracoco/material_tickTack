@@ -65,3 +65,5 @@ results/*.rds
 plots/*.pdf
 tickTack_sim_*
 MutTime_sim_*
+*Rout
+*out

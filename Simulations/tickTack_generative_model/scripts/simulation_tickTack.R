@@ -52,14 +52,22 @@ simulation_tickTack = function (n_clocks=3,
   cat("Best K =",best_K)
   
   
+  k_number <- nrow(results_model_selection$model_selection_tibble)
+  
   p <- list()
-  for (i in 1:n_clocks){
+  for (i in 1:k_number){
     p[[i]] <- tickTack::plot_timing_h(results_simulated, i, split_contiguous_segments = FALSE) + ggplot2::ggtitle(paste0("K = ", i))
+    if (i == best_K){
+      print(i)
+      png(filename="./plots/tickTack.png", height=250, width=700)
+      tickTack::plot_timing_h(results_simulated, i, split_contiguous_segments = FALSE) + ggplot2::ggtitle(paste0("K = ", i,"best K: ",best_K))
+      dev.off()
+    }else{NULL}
   }
   png(filename="./plots/tickTack_multiple.png", height=1000, width=700)
-  plot_tickTack <- gridExtra::grid.arrange(grobs = p, nrow=n_clocks)  #add global title
+  plot_tickTack <- gridExtra::grid.arrange(grobs = p, nrow=k_number)  #add global title
   dev.off()
-  plot_tickTack <- p[[best_K]]
+  # plot_tickTack <- p[[best_K]]
   
   
   
