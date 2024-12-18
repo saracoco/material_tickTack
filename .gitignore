@@ -63,4 +63,5 @@ inst/do
 # Simulation rresults
 results/*.rds
 plots/*.pdf
+*_sim_*
 
