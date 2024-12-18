@@ -55,6 +55,7 @@ simulations_gerstrung_data = function (n_clocks=3,
   info(vcf) <- cbind(info(vcf), mt$V)
   
   plot_MutTime <- plotSample(vcf,cn_timed)
+  plotSample(vcf,cn_timed)
   ggsave("plots/plot_Muttime.png", height=5, width=10)
   
   res_MutTime <- list(vcf = vcf, cn_timed = cn_timed)

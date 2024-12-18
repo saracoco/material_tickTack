@@ -97,6 +97,7 @@ simulation_tickTack = function (n_clocks=3,
   mt <- MutationTimeR::mutationTime(vcf, bb, clusters=clusters, n.boot=10)
   mcols(bb) <- cbind(mcols(bb),mt$T)
   plot_MutTime <- MutationTimeR::plotSample(vcf,bb)
+  MutationTimeR::plotSample(vcf,bb)
   ggsave("plots/plot_Muttime.png", height=5, width=10)
   
   res_MutTime <- list(vcf = vcf, cn_timed = bb)
