@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=THIN
 #SBATCH --account=cdslab
 #SBATCH --job-name=Generative_model_tickTack
 #SBATCH --nodes=1
@@ -9,9 +9,9 @@
 #SBATCH --time=24:00:00
 #SBATCH --output=tickTack_sim_%A_%a
 #SBATCH --error=tickTack_sim_err_%A_%a
-#SBATCH --array=1-3
+#SBATCH --array=1
 
-module load r
+module load R/4.4.1
 echo $SLURM_ARRAY_TASK_ID
 
 cd results
@@ -44,3 +44,4 @@ for (( i = 1 ; i <= 20 ; i += 1 )) ; do
   Rscript ../scripts/simulate_wrapper.R ${purity} ${coverage} ${n_clocks} ${n_events} ${epsilon} ${tolerance} ${max_attempts} ${seed}
   
 done
+

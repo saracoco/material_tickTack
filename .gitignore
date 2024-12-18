@@ -63,5 +63,5 @@ inst/do
 # Simulation rresults
 results/*.rds
 plots/*.pdf
-*_sim_*
-
+tickTack_sim_*
+MutTime_sim_*
