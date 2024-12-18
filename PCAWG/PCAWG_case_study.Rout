@@ -7,8 +7,6 @@ R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
 Type 'license()' or 'licence()' for distribution details.
 
-  Natural language support but running in an English locale
-
 R is a collaborative project with many contributors.
 Type 'contributors()' for more information and
 'citation()' on how to cite R or R packages in publications.
@@ -51,7 +49,7 @@ The following objects are masked from ‘package:base’:
 > 
 > library(tibble)
 > 
-> tolerance = 0.0001
+> tolerance = 0.001
 > iter = 200
 > grad_samples = 10
 > elbo_samples = 100
@@ -896,74 +894,10 @@ EXPERIMENTAL ALGORITHM:
   This procedure has not been thoroughly tested and may be unstable 
   or buggy. The interface is subject to change. 
 ------------------------------------------------------------ 
-Gradient evaluation took 0.003222 seconds 
-1000 transitions using 10 leapfrog steps per transition would take 32.22 seconds. 
+Gradient evaluation took 0.003348 seconds 
+1000 transitions using 10 leapfrog steps per transition would take 33.48 seconds. 
 Adjust your expectations accordingly! 
 Begin eta adaptation. 
 Iteration:   1 / 250 [  0%]  (Adaptation) 
 Iteration:  50 / 250 [ 20%]  (Adaptation) 
 Iteration: 100 / 250 [ 40%]  (Adaptation) 
-Iteration: 150 / 250 [ 60%]  (Adaptation) 
-Iteration: 200 / 250 [ 80%]  (Adaptation) 
-Success! Found best value [eta = 1] earlier than expected. 
-Begin stochastic gradient ascent. 
-  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes  
-     1        -9093.823             1.000            1.000 
-     2        -9223.889             0.507            1.000 
-     3        -9056.007             0.344            0.019 
-     4        -9017.629             0.259            0.019 
-     5        -9019.186             0.207            0.014 
-     6        -9014.840             0.173            0.014 
-     7        -9013.797             0.148            0.004 
-     8        -9014.290             0.130            0.004 
-     9        -9014.037             0.115            0.000 
-    10        -9018.577             0.104            0.001 
-    11        -9013.321             0.094            0.001 
-    12        -9012.590             0.087            0.001 
-    13        -9014.136             0.080            0.000 
-    14        -9012.287             0.074            0.000 
-    15        -9011.287             0.069            0.000 
-    16        -9012.682             0.065            0.000 
-    17        -9011.465             0.061            0.000 
-    18        -9011.142             0.058            0.000 
-    19        -9010.887             0.055            0.000 
-    20        -9011.368             0.052            0.000 
-    21        -9010.149             0.002            0.000 
-    22        -9011.189             0.001            0.000 
-    23        -9010.771             0.000            0.000 
-    24        -9013.053             0.000            0.000 
-    25        -9010.097             0.000            0.000 
-    26        -9011.444             0.000            0.000 
-    27        -9012.635             0.000            0.000 
-    28        -9012.929             0.000            0.000 
-    29        -9011.064             0.000            0.000 
-    30        -9009.621             0.000            0.000 
-    31        -9009.374             0.000            0.000 
-    32        -9009.173             0.000            0.000 
-    33        -9010.344             0.000            0.000 
-    34        -9008.743             0.000            0.000 
-    35        -9013.809             0.000            0.000 
-    36        -9010.054             0.000            0.000 
-    37        -9011.519             0.000            0.000 
-    38        -9010.276             0.000            0.000 
-    39        -9009.461             0.000            0.000 
-    40        -9010.580             0.000            0.000 
-    41        -9010.448             0.000            0.000 
-    42        -9009.366             0.000            0.000 
-    43        -9010.357             0.000            0.000 
-    44        -9009.150             0.000            0.000 
-    45        -9009.202             0.000            0.000 
-    46        -9008.352             0.000            0.000 
-    47        -9009.490             0.000            0.000 
-    48        -9010.378             0.000            0.000 
-    49        -9009.657             0.000            0.000 
-    50        -9008.786             0.000            0.000 
-    51        -9008.070             0.000            0.000 
-    52        -9009.623             0.000            0.000 
-    53        -9008.424             0.000            0.000 
-    54        -9008.554             0.000            0.000 
-    55        -9008.883             0.000            0.000 
-    56        -9011.019             0.000            0.000 
-    57        -9008.456             0.000            0.000 
-    58        -9008.641             0.000            0.000   MEDIAN ELBO CONVERGED 
-Drawing a sample of size 1000 from the approximate posterior...  

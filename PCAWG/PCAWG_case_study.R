@@ -19,7 +19,7 @@ library(dplyr)
 
 library(tibble)
 
-tolerance = 0.0001
+tolerance = 0.001
 iter = 200
 grad_samples = 10
 elbo_samples = 100
