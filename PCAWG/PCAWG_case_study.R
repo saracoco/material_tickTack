@@ -39,6 +39,7 @@ lapply(vector_names, function(s){
   fit <- readRDS(paste0("../../data/clonal_analysis_PCAWG/",s,"/fit.rds"))
   original_dir <- getwd()
   
+  print(s)
   
   dir.create(file.path(original_dir, paste0("results_tickTack/",s)), showWarnings = FALSE)
   new_dir = paste0(original_dir, paste0("/results_tickTack/",s))
