@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=THIN
 #SBATCH --account=cdslab
 #SBATCH --job-name=MutTimeR
 #SBATCH --nodes=1
