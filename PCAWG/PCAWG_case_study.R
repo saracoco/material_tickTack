@@ -2,7 +2,9 @@
 # data <- read.delim(file = untar(tarfile,compressed="gzip"),sep="\t")
 .libPaths(new="~/R/rstudio_v3/") 
 library(tickTack)
-
+library(dplyr)
+library(ggplot2)
+library(parallel)
 
 set.seed(seed=123)
 spath <-  "../../data"
@@ -11,7 +13,6 @@ sfile <-  "clonal_analysis_PCAWG.tar.gz"
 outputdir <- "../../data"
 data <- untar(file.path(spath,sfile), exdir = outputdir)
 
-library(dplyr)
 # Rename columns from list
 # setNames(old = c(cna), 
 #          new = c(segments))
@@ -32,7 +33,7 @@ vector_names <- list.files("../../data/clonal_analysis_PCAWG/")
 # s <- vector_names[1]
 
 
-lapply(vector_names, function(s){
+parallel::mclapply(vector_names, function(s){
   
   tryCatch({
   
@@ -40,6 +41,7 @@ lapply(vector_names, function(s){
   original_dir <- getwd()
   
   print(s)
+  
   
   dir.create(file.path(original_dir, paste0("results_tickTack/",s)), showWarnings = FALSE)
   new_dir = paste0(original_dir, paste0("/results_tickTack/",s))
@@ -102,8 +104,7 @@ lapply(vector_names, function(s){
   ggplot2::ggsave(paste0(new_dir,"/plots/plot_elbo.png"),plot = p_elbo, width = 30, height = 30)
   
   
-  library(dplyr)
-  library(ggplot2)
+
   p <- tickTack::plot_timing_h(results, best_K)
   ggsave(paste0(new_dir,"/plots/plot_timing_h.png"),plot = p, width = 25, height = 5)
   
@@ -152,7 +153,7 @@ lapply(vector_names, function(s){
   })
   
   
-} )
+}, mc.cores = (parallel::detectCores()-1), mc.allow.recursive = TRUE)
 
 
 
