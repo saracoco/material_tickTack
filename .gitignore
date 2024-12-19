@@ -60,10 +60,13 @@ inst/do
 *.png
 *.pdf
 
-# Simulation rresults
+# Simulation results
 results/*.rds
 plots/*.pdf
+plots/*.png
+results_tickTack/*
 tickTack_sim_*
 MutTime_sim_*
-*Rout
-*out
+.Rout
+.out
+.rds
