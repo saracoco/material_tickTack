@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=PCAWG_timing
 #SBATCH --no-requeue
-#SBATCH --nodes=1
-#SBATCH --cpus-per-task=12
+#SBATCH --nodes=3
+#SBATCH --cpus-per-task=24
 #SBATCH --time=72:00:00
 #SBATCH --partition=THIN
 #SBATCH --mem=100gb

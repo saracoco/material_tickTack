@@ -22,9 +22,18 @@ count_files = function(a, counter) {
   else { return (0)}
 }
 
+get_inferences = function(a, counter) {
+  n_files <- length(list.files(paste0("./",a,"/results")))
+  if (n_files == 0){
+    return (1)
+  }
+  else { return (a)}
+}
+
 result_files <- list.files()
 
-all_data <- sum(lapply(result_files, count_files)%>%unlist())
+failed_inference <- sum(lapply(result_files, count_files)%>%unlist())/length(list.files())
+result_files_with_inference <- sum(lapply(result_files, count_files)%>%unlist())
 
 
 
