@@ -16,9 +16,9 @@ print(coverage)
 print (n_clocks) 
 print (n_events)
 print(epsilon)
+print(seed) 
 print(tolerance) 
 print(max_attempts) 
-print(seed) 
 
 
 .libPaths(new="~/R/rstudio_v3/") 

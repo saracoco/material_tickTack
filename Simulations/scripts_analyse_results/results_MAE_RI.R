@@ -11,6 +11,34 @@ library(future.apply)
 library(parallel)
 
 
+
+#check PCAWG tickTack results
+
+count_files = function(a, counter) {
+  n_files <- length(list.files(paste0("./",a,"/results")))
+  if (n_files == 0){
+    return (1)
+  }
+  else { return (0)}
+}
+
+result_files <- list.files()
+
+all_data <- sum(lapply(result_files, count_files)%>%unlist())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Define the main directory containing all configurations
 base_dir <- "."
 
@@ -219,30 +247,60 @@ ggplot(mae_long_filtered, aes(x = as.factor(purity), y = MAE_value, fill = MAE_t
 
 
 
-# Filter data for a specific purity value
-filtered_df <- df %>% filter(purity == 0.1)  # Example: Fix purity at 0.1
 
-# Reshape the filtered dataset for plotting
+
+
+filtered_df <- final_result %>% filter(coverage == 100)  # Fix coverage at 100
+
+# Reshape data for plotting
 mae_long_filtered <- filtered_df %>%
   pivot_longer(
-    cols = starts_with("MAE"),
-    names_to = "MAE_type",
-    values_to = "MAE_value"
+    cols = starts_with("MAE"), # Select all MAE columns
+    names_to = "MAE_type",     # Column for MAE type
+    values_to = "MAE_value"    # Column for MAE values
   )
 
-# Plot MAE scores grouped by coverage for a fixed purity
-ggplot(mae_long_filtered, aes(x = as.factor(coverage), y = MAE_value, fill = MAE_type)) +
+
+
+# Plot MAE scores by purity and facet by n_clocks
+ggplot(mae_long_filtered, aes(x = as.factor(purity), y = MAE_value, fill = MAE_type)) +
   geom_boxplot() +
-  facet_wrap(~MAE_type, scales = "free_y") +
+  facet_wrap(~n_clocks, scales = "free_y") +  # Facet by n_clocks
   labs(
-    title = "MAE Scores by Coverage (Fixed Purity = 0.1)",
-    x = "Coverage",
+    title = "MAE Scores by Purity (Fixed Coverage = 100, Grouped by Clocks)",
+    x = "Purity",
     y = "MAE Value",
     fill = "MAE Type"
   ) +
   theme_minimal()
 
 
+ggplot(mae_long_filtered, aes(x = as.factor(purity), y = MAE_value, fill = as.factor(n_clocks))) +
+  geom_boxplot(position = "dodge") +
+  facet_wrap(~MAE_type, scales = "free_y") +  # Facet by MAE type
+  labs(
+    title = "MAE Scores by Purity and Clocks (Fixed Coverage = 100)",
+    x = "Purity",
+    y = "MAE Value",
+    fill = "Number of Clocks"
+  ) +
+  theme_minimal()
+
+
+# Filter data for a specific purity value
+filtered_df <- final_result %>% filter(purity == 0.1)  # Fix purity at 0.1
+
+# Reshape and plot as before, grouping by coverage and faceting by n_clocks
+ggplot(mae_long_filtered, aes(x = as.factor(coverage), y = MAE_value, fill = as.factor(n_clocks))) +
+  geom_boxplot(position = "dodge") +
+  facet_wrap(~MAE_type, scales = "free_y") +  # Facet by MAE type
+  labs(
+    title = "MAE Scores by Coverage and Clocks (Fixed Purity = 0.1)",
+    x = "Coverage",
+    y = "MAE Value",
+    fill = "Number of Clocks"
+  ) +
+  theme_minimal()
 
 
 ###############################################

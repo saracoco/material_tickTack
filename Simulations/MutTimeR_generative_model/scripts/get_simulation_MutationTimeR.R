@@ -17,10 +17,23 @@ get_simulation_MutationTimeR = function(number_clocks, number_events, purity, co
   weights_tau <- rep(1/number_clocks, number_clocks)
   data_simulation <- get_taus_karyo_gerstrung(number_events, vector_tau, vector_karyo, weights_tau, weights_karyo)
   
+  major_cn <- lapply(data_simulation$karyo, function(x) as.numeric(strsplit(x,split=":")[[1]][1]))%>%unlist
+  minor_cn <- lapply(data_simulation$karyo, function(x) as.numeric(strsplit(x,split=":")[[1]][2]))%>%unlist
+  
+  df <- bind_cols(major_cn=major_cn,minor_cn=minor_cn, chr = data_simulation$chr, taus = data_simulation$taus)
+  
+  all_chr <- tibble(chr = 1:23)
+  
+  df <- all_chr %>%
+    left_join(df, by = "chr") %>%
+    mutate(
+      major_cn = if_else(is.na(major_cn), 1, major_cn),
+      minor_cn = if_else(is.na(minor_cn), 1, minor_cn)
+    )
   
   
   # simulation from mutationtimer
-  cn <- MutationTimeR:::refLengths[c(1:23)]
+  cn <- MutationTimeR:::refLengths[df$chr]
   
   clusters <- data.frame(cluster=1:1, proportion=c(purity), n_ssms=c(100))
   clusters <- data.frame(cluster=1:1, proportion=c(purity), n_ssms=c(100))
@@ -36,19 +49,6 @@ get_simulation_MutationTimeR = function(number_clocks, number_events, purity, co
   
   
   ######## my modifications to simulation #############
-  major_cn <- lapply(data_simulation$karyo, function(x) as.numeric(strsplit(x,split=":")[[1]][1]))%>%unlist
-  minor_cn <- lapply(data_simulation$karyo, function(x) as.numeric(strsplit(x,split=":")[[1]][2]))%>%unlist
-  
-  df <- bind_cols(major_cn=major_cn,minor_cn=minor_cn, chr = data_simulation$chr, taus = data_simulation$taus)
-  
-  all_chr <- tibble(chr = 1:23)
-  
-  df <- all_chr %>%
-    left_join(df, by = "chr") %>%
-    mutate(
-      major_cn = if_else(is.na(major_cn), 1, major_cn),
-      minor_cn = if_else(is.na(minor_cn), 1, minor_cn)
-    )
   
   cn$major_cn <- df$major_cn
   cn$minor_cn <- df$minor_cn
@@ -61,6 +61,7 @@ get_simulation_MutationTimeR = function(number_clocks, number_events, purity, co
   
   
   for(i in seq_along(cn)){
+    print(i)
     t1 <- df$taus[i]
     pi <- time2pi(cn$major_cn[i], cn$minor_cn[i], t1, t2)
     pi_sub <- clusters$n_ssms

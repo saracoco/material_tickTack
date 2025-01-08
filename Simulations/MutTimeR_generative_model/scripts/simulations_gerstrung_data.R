@@ -23,10 +23,10 @@ simulations_gerstrung_data = function (n_clocks=3,
   
   print("simulate gerstrung data")
 
-  print (n_clocks) 
-  print (n_events)
   print(purity) 
   print(coverage)
+  print (n_clocks) 
+  print (n_events)
   print(epsilon)
   print(seed) 
   print(tolerance) 
