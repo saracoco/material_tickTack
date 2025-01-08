@@ -11,19 +11,19 @@ max_attempts <- as.double(args[7])
 seed <- as.double(args[8])
 
 print("simulate wrapper")
-print (n_clocks) 
-print (n_events)
 print(purity) 
 print(coverage)
+print (n_clocks) 
+print (n_events)
 print(epsilon)
-print(seed) 
 print(tolerance) 
 print(max_attempts) 
+print(seed) 
 
 
-
+.libPaths(new="~/R/rstudio_v3/") 
 source("../scripts/simulations_gerstrung_data.R")
-
+library(ggplot2)
 
 original_dir <- getwd()
 cat(original_dir)
@@ -52,7 +52,7 @@ saveRDS(res$res_SingleTT, "results/res_SingleTT.rds")
 saveRDS(res$compare_assignment, "results/compare_assignment.rds")
 
 # ggsave("plots/plot_Muttime.png", plot= res$plot_Muttime)
-ggsave("plots/plot_SingleTT.png", plot= res$plot_SingleTT)
-ggsave("plots/plot_tickTack.png", plot= res$plot_tickTack)
+ggsave("plots/plot_SingleTT.png", plot= res$plot_SingleTT, height=5, width=10)
+ggsave("plots/plot_tickTack.png", plot= res$plot_tickTack, height=5, width=10)
 
   

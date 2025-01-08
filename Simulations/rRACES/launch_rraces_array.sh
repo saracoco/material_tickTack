@@ -1,15 +1,15 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=THIN
 #SBATCH --account=cdslab
 #SBATCH --job-name=races_sim
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=200gb
-#SBATCH --time=12:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=races_sim_%A_%a
 #SBATCH --error=races_sim_err_%A_%a
-#SBATCH --array=1-20
+#SBATCH --array=1-6
 
 module load R/4.4.1
 
@@ -35,4 +35,4 @@ echo $seed
 echo $n_clocks
 echo $n_events
 
-Rscript simulate_rRACES_wrapper.R ${purity} ${coverage} ${n_clocks} ${n_events} ${epsilon} ${seed}
+Rscript scripts/simulate_rRACES_wrapper.R ${purity} ${coverage} ${n_clocks} ${n_events} ${epsilon} ${seed}

@@ -3,7 +3,7 @@
 #SBATCH --no-requeue
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=12
-#SBATCH --time=48:00:00
+#SBATCH --time=72:00:00
 #SBATCH --partition=THIN
 #SBATCH --mem=100gb
 #SBATCH --output=PCAWG_%j.out

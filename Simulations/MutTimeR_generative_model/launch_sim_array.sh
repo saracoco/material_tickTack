@@ -9,13 +9,12 @@
 #SBATCH --time=24:00:00
 #SBATCH --output=MutTimeR_sim_%A_%a
 #SBATCH --error=MutTimeR_sim_err_%A_%a
-#SBATCH --array=1-20
+#SBATCH --array=1
 
 module load R/4.4.1
+echo $SLURM_ARRAY_TASK_ID
 
 cd results
-
-echo $SLURM_ARRAY_TASK_ID
 
 purity=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$1; exit }" params_config.txt)
 coverage=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$2; exit }" params_config.txt)
@@ -41,6 +40,6 @@ for (( i = 1 ; i <= 20 ; i += 1 )) ; do
   echo $n_clocks
   echo $n_events
   
-  Rscript ../scripts/simulate_wrapper.R ${purity} ${coverage} ${n_clocks} ${n_events} ${epsilon} ${seed} ${tolerance} ${max_attempts}
+  Rscript ../scripts/simulate_wrapper.R ${purity} ${coverage} ${n_clocks} ${n_events} ${epsilon} ${tolerance} ${max_attempts} ${seed} 
   
 done

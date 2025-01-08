@@ -44,7 +44,7 @@ get_taus_karyo_gerstrung = function (number_events,
   
   taus <- sample( vector_tau[1:length(vector_tau)], number_events, replace=TRUE, prob=weigths_tau )
   karyo <- sample( vector_karyo[1:length(vector_karyo)], number_events, replace=TRUE, prob=weights_karyo )
-  chr <- sample(chromosomes, number_events, replace = FALSE)
+  chr <- sample(chromosomes, number_events, replace = TRUE)
   
   return(list(taus=taus,karyo=karyo, chr=chr))
   

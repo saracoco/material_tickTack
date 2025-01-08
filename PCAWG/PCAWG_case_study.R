@@ -5,6 +5,8 @@ library(tickTack)
 library(dplyr)
 library(ggplot2)
 library(parallel)
+  
+print(parallel::detectCores()-1)
 
 set.seed(seed=123)
 spath <-  "../../data"
@@ -20,7 +22,7 @@ data <- untar(file.path(spath,sfile), exdir = outputdir)
 
 library(tibble)
 
-tolerance = 0.001
+tolerance = 0.0001
 iter = 200
 grad_samples = 10
 elbo_samples = 100

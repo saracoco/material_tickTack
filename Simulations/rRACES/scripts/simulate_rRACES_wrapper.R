@@ -12,14 +12,14 @@ seed <- as.double(args[6])
 
 .libPaths(new="~/R/rstudio_v3/") 
 
-source("./simulate_rRACES.R")
-source("simulate_tissue.R")
-source("place_mutations.R")
-source("get_sequencing.R")
-source("plot_races.R")
-source("results_races.R")
+source("./scripts/simulate_rRACES.R")
+source("./scripts/simulate_tissue.R")
+source("./scripts/place_mutations.R")
+source("./scripts/get_sequencing.R")
+source("./scripts/plot_races.R")
+source("./scripts/results_races.R")
 
-# source("../simulate_rRACES.R")
+#source("./scripts/simulate_rRACES.R")
 
 original_dir <- (getwd())
 cat(original_dir)

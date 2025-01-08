@@ -1,4 +1,3 @@
-.libPaths(new="~/R/rstudio_v3/") 
 library(MutationTimeR)
 library(dplyr)
 library(tickTack)
@@ -9,7 +8,8 @@ original_directory = getwd()
 source("../scripts/get_simulation_MutationTimeR.R")
 
 
-
+print("pre simulate gerstrung data")
+ 
 simulations_gerstrung_data = function (n_clocks=3, 
                                        n_events=8, 
                                        purity=0.9, 
@@ -40,6 +40,8 @@ simulations_gerstrung_data = function (n_clocks=3,
                                                coverage=coverage, 
                                                epsilon=epsilon, 
                                                seed = seed)
+  
+  
   df <- res_simulate$df
   vcf <- res_simulate$vcf
   cn <- res_simulate$cn
