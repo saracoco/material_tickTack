@@ -9,7 +9,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --output=tickTack_sim_%A_%a
 #SBATCH --error=tickTack_sim_err_%A_%a
-#SBATCH --array=1-60
+#SBATCH --array=1-108
 
 module load R/4.4.1
 echo $SLURM_ARRAY_TASK_ID

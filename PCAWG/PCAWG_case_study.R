@@ -35,7 +35,7 @@ vector_names <- list.files("../../data/clonal_analysis_PCAWG/")
 # s <- vector_names[1]
 
 
-parallel::mclapply(vector_names, function(s){
+parallel::mclapply(vector_names[1:3], function(s){
   
   tryCatch({
   

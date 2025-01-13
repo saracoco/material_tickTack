@@ -7,10 +7,19 @@ get_simulation_tickTack = function(number_clocks, number_events, purity, coverag
   
   weights_karyo <- rep(1/length(vector_karyo), length(vector_karyo))
   
-  vector_tau = stats::runif(number_clocks, 0, 1)
-  while(min(diff(vector_tau)) <= epsilon) {
-    vector_tau = stats::runif(number_clocks, 0, 1)
+  # vector_tau = stats::runif(number_clocks, 0, 1)
+  # while(min(diff(vector_tau)) <= epsilon) {
+  #   vector_tau = stats::runif(number_clocks, 0, 1)
+  # }
+  
+  vector_tau <- numeric(0)
+    while (length(vector_tau) < number_clocks) {
+    new_value <- stats::runif(1, 0, 1)
+        if (all(abs(new_value - vector_tau) > epsilon)) {
+      vector_tau <- c(vector_tau, new_value) # Append the new value to vector_tau
+    }
   }
+  
   
   weights_tau <- rep(1/number_clocks, number_clocks)
   data_simulation <- get_taus_karyo(number_events, vector_tau, vector_karyo, weights_tau, weights_karyo)
