@@ -70,3 +70,5 @@ MutTimeR_sim_*
 .Rout
 .out
 .rds
+
+PCAWG/data/clonal_analysis_PCAWG/*
