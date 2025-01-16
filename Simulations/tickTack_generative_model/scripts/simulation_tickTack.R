@@ -38,12 +38,12 @@ simulation_tickTack = function (n_clocks=3,
   x = res_simulate$x
   
   df = x$cna %>% left_join(data_simulation)
+  saveRDS(x, "input_data.rds")
   
  # timing inference ticktack hierarchical
 
   x <- tickTack::fit_h(x, max_attempts=max_attempts, INIT=INIT, tolerance = tolerance)
-  
-  
+
   results_simulated <- x$results_timing
   results_model_selection <- tickTack::model_selection_h(results_simulated)
   best_K <- results_model_selection$best_K

@@ -12,39 +12,76 @@ library(parallel)
 
 
 
-#check PCAWG tickTack results
+#check PCAWG tickTack results ############################################################à
+results_time_1 <- list.files("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_tickTack_1")
+results_time_parallel <- list.files("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_tickTack_parallel_2")
+
+fittable_samples <- readRDS("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/fittable_samples.RDS")
 
 count_files = function(a, counter) {
   n_files <- length(list.files(paste0("./",a,"/results")))
   if (n_files == 0){
-    return (1)
+    return (0)
   }
-  else { return (0)}
+  else { return(1)}
 }
 
-get_inferences = function(a, counter) {
+get_files_success = function(a, counter) {
   n_files <- length(list.files(paste0("./",a,"/results")))
   if (n_files == 0){
-    return (1)
+    return(a)
   }
-  else { return (a)}
+  else { return(NULL)}
 }
 
 result_files <- list.files()
+# result_files_with_inference <- sum(lapply(result_files, count_files)%>%unlist())
+# successes <- sum(lapply(result_files, count_files)%>%unlist())/length(list.files())
+# successes_files <-(lapply(result_files, get_files_success)%>%unlist())
 
-failed_inference <- sum(lapply(result_files, count_files)%>%unlist())/length(list.files())
-result_files_with_inference <- sum(lapply(result_files, count_files)%>%unlist())
+successes_parallel <- sum(lapply(results_time_parallel, count_files)%>%unlist()) #/length(list.files())
+successes_files_parallel <-(lapply(results_time_parallel, get_files_success)%>%unlist())
+# successes_1 <- sum(lapply(results_time_1, count_files)%>%unlist())/length(list.files())
+# successes_files_1 <-(lapply(results_time_1, get_files_success)%>%unlist())
+
+normalize_ids <- function(ids) {
+  sub("data/clonal_analysis_PCAWG//", "", ids)
+}
+norm_fittable_samples <- normalize_ids(fittable_samples)
+intersect(norm_fittable_samples, successes_files_1)
 
 
 
+# list1 <- successes_files
+# list2 <- successes_files_1
+# successes_files1 <- list1[grepl("-0$", list1)]
+# successes_files2 <- list2[grepl("-0$", list2)]
+# normalize_ids <- function(ids) {
+#   sub("-0$", "", ids)
+# }
+# norm_list1 <- normalize_ids(list1)
+# norm_list2 <- normalize_ids(list2)
+# common_ids <- intersect(norm_list1, norm_list2)
+# 
+# matches_with_suffix <- sapply(common_ids, function(id) {
+#   in_list1_with_suffix <- paste0(id, "-0") %in% list1
+#   in_list2_without_suffix <- id %in% list2
+#   in_list2_with_suffix <- paste0(id, "-0") %in% list2
+#   in_list1_without_suffix <- id %in% list1
+#   if ((in_list1_with_suffix && in_list2_without_suffix) || 
+#       (in_list2_with_suffix && in_list1_without_suffix)) {
+#     return(id)
+#   } else {
+#     return(NULL)
+#   }
+# })
+# matches_with_suffix <- matches_with_suffix[!sapply(matches_with_suffix, is.null)]
+# matches_with_suffix
+# exact_matches <- intersect(list1, list2)
+# matches_with_suffix <- exact_matches[grepl("-0$", exact_matches)]
 
 
-
-
-
-
-
-
+#######################################################################
 
 
 
