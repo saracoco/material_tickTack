@@ -57,33 +57,15 @@ parallel::mclapply(vector_names, function(s){
   print(s)
   
   
-  dir.create(file.path(original_dir, paste0("results_tickTack/",s)), showWarnings = FALSE)
-  new_dir = paste0(original_dir, paste0("/results_tickTack/",s))
+  dir.create(file.path(original_dir, paste0("results_whole/",s)), showWarnings = FALSE)
+  new_dir = paste0(original_dir, paste0("/results_whole/",s))
   dir.create(file.path(new_dir, paste0("results")), showWarnings = FALSE)
   dir.create(file.path(new_dir, paste0("plots")), showWarnings = FALSE)
   
   
   
   x = list( mutations = fit$snvs, cna = fit$cna, metadata= tibble(purity=fit$purity))
-  # x <- list( mutations = tibble(chr = fit$snvs$chr, 
-  #                               from = fit$snvs$from, 
-  #                               to = fit$snvs$to, 
-  #                               ref = fit$snvs$ref, 
-  #                               alt = fit$snvs$alt, 
-  #                               DP = fit$snvs$DP, 
-  #                               NV = fit$snvs$NV, 
-  #                               VAF = fit$snvs$NV/fit$snvs$DP, 
-  #                               sample = 1), 
-  #            cna = tibble(chr = fit$cna$chr, 
-  #                         from = fit$cna$from, 
-  #                         to = fit$cna$to, 
-  #                         Major = fit$cna$Major, 
-  #                         minor = fit$cna$minor,   
-  #                         CCF = 0, 
-  #                         total_cn = Major + minor), 
-  #            metadata = tibble(purity = fit$purity) 
-  # )
-  
+ 
   data <- x
   
   x <- tickTack::fit_h(x, 
@@ -93,15 +75,19 @@ parallel::mclapply(vector_names, function(s){
                        initial_iter = initial_iter,
                        grad_samples=grad_samples,
                        elbo_samples=elbo_samples,
-                       min_mutations_number = 15)
+                       min_mutations_number = 4)
   
   
   
   results <- x$results_timing
   saveRDS(x, paste0(new_dir,"/results/x_after_inference.rds"))
   
+  
   results_model_selection <- tickTack::model_selection_h(results, n_components = 0)
   saveRDS(results_model_selection, paste0(new_dir,"/results/results_model_selection.rds"))
+  
+  summarized_results <- results_model_selection$best_fit$summarized_results
+  saveRDS(summarized_results, paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results/",s,".rds"))
   
   best_K <- results_model_selection$best_K
   model_selection_tibble <- results_model_selection$model_selection_tibble
@@ -133,7 +119,7 @@ parallel::mclapply(vector_names, function(s){
     plot_model_selection_inference[[i]] <- tickTack::plot_timing_h(results, i) + ggplot2::ggtitle(paste0("K = ", i))
   }
   plot_model_selection_inference <- gridExtra::grid.arrange(grobs = plot_model_selection_inference, nrow = K) #add global title
-  ggsave(paste0(new_dir,"/plots/plot_timing_all_K_h.png"),plot = plot_model_selection_inference, width = 25, height = 50)
+  ggsave(paste0(new_dir,"/plots/plot_timing_all_K_h.png"),plot = plot_model_selection_inference, width = 25, height = 30)
   
   
   
@@ -155,7 +141,9 @@ parallel::mclapply(vector_names, function(s){
   saveRDS(results_single, paste0(new_dir, "/results/results_single.rds"))
   
   
-  print(results_single$summarized_results, n= nrow(results_single$summarized_results) )
+  result_tibble_single <- results_single$summarized_results 
+  saveRDS(result_tibble_single, paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results/",s,"_result_tibble_single.rds"))
+  
   
   p <- tickTack::plot_timing(results_single, segments, colour_by = "karyotype")
   ggsave(paste0(new_dir,"/plots/plot_timing.png"),plot = p, , width = 25, height = 5)
