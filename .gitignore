@@ -72,4 +72,5 @@ MutTimeR_sim_*
 .rds
 PCAWG/results_whole
 
+*._.DS_Stor*
 PCAWG/data/clonal_analysis_PCAWG/*
