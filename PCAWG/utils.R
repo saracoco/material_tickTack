@@ -74,3 +74,10 @@ is_fittable = function(fit, possible_k = c("2:1", "2:2", "2:0"), alpha = .05, mi
   }
   return(FALSE)
 }
+
+parse_summarized_results <- function(results) {
+  results %>% 
+    tidyr::separate(segment_name, into = c("chr", "from", "to"), sep = "_", convert = TRUE) %>% 
+    dplyr::mutate(clock_rank = dplyr::dense_rank(clock_mean)) %>% 
+    dplyr::select(chr, from, to, segment_id, karyotype, clock_mean, clock_low, clock_high, clock_rank)
+}
