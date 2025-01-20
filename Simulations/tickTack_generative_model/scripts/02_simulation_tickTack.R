@@ -1,6 +1,6 @@
 source("../scripts/convert_to_vcf.R")
 source("../scripts/convert_to_granges.R")
-source("../scripts/get_simulation_tickTack.R")
+source("../scripts/03_get_simulation_tickTack.R")
 library(ggplot2)
 
 simulation_tickTack = function (n_clocks=3, 
@@ -12,20 +12,10 @@ simulation_tickTack = function (n_clocks=3,
                                        tolerance = 0.001,
                                        max_attempts = 2,
                                        INIT = TRUE,
-                                       min_mutations_number = 3) {
+                                       min_mutations_number = 4) {
   
-  print("simulate ticTack data")
+  print("02_simulation_tickTack")
 
-  print (paste0("number of clocks = ",n_clocks))
-  print (paste0("number of events = ",n_events))
-  print (paste0("sample purity = ",purity)) 
-  print (paste0("number of clocks = ",coverage))
-  print (paste0("number of clocks = ",epsilon))
-  print (paste0("number of clocks = ",seed)) 
-  print (paste0("number of clocks = ",tolerance))
-  print (paste0("number of clocks = ",max_attempts)) 
-
-  
   
   res_simulate <- get_simulation_tickTack(number_clocks=n_clocks, 
                                                number_events=n_events, 
@@ -41,7 +31,6 @@ simulation_tickTack = function (n_clocks=3,
   saveRDS(x, "input_data.rds")
   
  # timing inference ticktack hierarchical
-
   x <- tickTack::fit_h(x, max_attempts=max_attempts, INIT=INIT, tolerance = tolerance)
 
   results_simulated <- x$results_timing
