@@ -12,7 +12,7 @@ ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public
   select(sample_id, ttype) %>% 
   dplyr::distinct()
 
-results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_tickTack_parallel_2/"
+results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
 
 IDs <- list.files(results_path)
 
@@ -189,12 +189,14 @@ for (k in seq_len(nrow(driver_pairs))) {
     filter(n != 1) %>%
     summarise(score = mean(ifelse(clock_rank[driver == pair$first_driver] < clock_rank[driver == pair$second_driver], 
                                   -1, 
-                                  ifelse(clock_rank[driver == pair$first_driver] == clock_rank[driver == pair$second_driver], 0, 1))),
-              .groups = "drop") %>%
+                                  ifelse(clock_rank[driver == pair$first_driver] == clock_rank[driver == pair$second_driver], 0, 1)))) %>%
     pull(score)
   
+  n_samples = length(score)
+  score = mean(score)
+  
   # Store result
-  results[[k]] <- tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score)
+  results[[k]] <- tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples)
 }
 
 # Combine results into a single dataframe
@@ -205,4 +207,5 @@ scores_df %>%
   ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
   geom_tile() +
   scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white") +
-  theme_bw()
+  theme_bw() +
+  labs(x = "Driver 1", y = 'Driver 2')
