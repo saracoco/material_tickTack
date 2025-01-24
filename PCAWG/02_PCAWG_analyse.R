@@ -15,6 +15,8 @@ ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public
 
 results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
 
+fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
+
 IDs <- list.files(results_path)
 
 RES <- lapply(IDs, function(id) {
@@ -23,16 +25,14 @@ RES <- lapply(IDs, function(id) {
     print(paste0("Skipping sample id ", id))
     return(NULL)
   }
+  
   res_model_selection <- readRDS(results_model_selection_path)
   results <- res_model_selection$best_fit$summarized_results
   
-  df <- ttypes %>% 
-    dplyr::filter(sample_id == id)
+  fit = readRDS(paste0(fits_path, id, "/fit.rds"))
+  ttype = strsplit(fit$snvs$project_code, "-")[[1]][1]
   
-  if (nrow(df) == 0) {
-    df = dplyr::tibble(sample_id=id, ttype="Uknown")
-  }
-  
+  df = dplyr::tibble(sample_id=id, ttype=ttype)
   
   dplyr::bind_cols(df, parse_summarized_results(results))
 }) %>% do.call("bind_rows", .)
@@ -53,6 +53,10 @@ RES %>%
   ggplot2::geom_col() +
   ggplot2::coord_flip() +
   theme_bw()
+
+ggsave("plot/ttype_distributions.png", width = 10, height =10, units="in", dpi=300)
+
+RES$ttype %>% unique()
 
 RES %>% 
   dplyr::group_by(ttype, karyotype) %>% 
@@ -151,17 +155,19 @@ res_w_drivers %>%
   
 
 # Select tumour types
-# tumour_type = "Liver-HCC"
+tumour_type = "PACA"
 # res_w_drivers <- res_w_drivers %>% 
 #   dplyr::filter(driver != "None", ttype == tumour_type)
 
 # Filter drivers seen in at least a certain number of samples
 frequent_drivers <- res_w_drivers %>% 
+  dplyr::filter(ttype == tumour_type) %>% 
   #dplyr::group_by(ttype, driver) %>% 
   dplyr::group_by(driver) %>% 
   dplyr::summarise(n = n()) %>% 
   dplyr::filter(n >= 3) %>% 
   dplyr::pull(driver)
+frequent_drivers
 
 # Create all pairs of drivers
 driver_pairs <- expand.grid(first_driver = frequent_drivers, second_driver = frequent_drivers) %>%
@@ -203,10 +209,18 @@ for (k in seq_len(nrow(driver_pairs))) {
 # Combine results into a single dataframe
 scores_df <- bind_rows(results)
 
+
+scores_df %>% 
+  dplyr::filter(first_driver == "KRAS")
+
 scores_df %>% 
   na.omit() %>% 
   ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
   geom_tile() +
   scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white") +
   theme_bw() +
-  labs(x = "Driver 1", y = 'Driver 2')
+  labs(x = "Driver 1", y = 'Driver 2') +
+  ggtitle(tumour_type)
+
+
+ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300)
