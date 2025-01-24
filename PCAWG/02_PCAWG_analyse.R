@@ -6,10 +6,11 @@ library(dplyr)
 library(ggplot2)
 library(parallel)
 library(tibble)
+require(tidyverse)
 source("utils.R")
 
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>% 
-  select(sample_id, ttype) %>% 
+  dplyr::select(sample_id, ttype) %>% 
   dplyr::distinct()
 
 results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
