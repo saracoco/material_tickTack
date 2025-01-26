@@ -4,25 +4,27 @@ source("../scripts/03_get_simulation_tickTack.R")
 library(ggplot2)
 
 simulation_tickTack = function (n_clocks=3, 
-                                       n_events=8, 
-                                       purity=0.9, 
-                                       coverage=100, 
-                                       epsilon=0.20, 
-                                       seed = 123, 
-                                       tolerance = 0.001,
-                                       max_attempts = 2,
-                                       INIT = TRUE,
-                                       min_mutations_number = 4) {
+                                n_events=8, 
+                                purity=0.9, 
+                                coverage=100, 
+                                epsilon=0.20, 
+                                seed = 123, 
+                                tolerance = 0.001,
+                                max_attempts = 2,
+                                INIT = TRUE,
+                                min_mutations_number = 4,
+                                mutations_per_segment = 10) {
   
   print("02_simulation_tickTack")
-
+  
   
   res_simulate <- get_simulation_tickTack(number_clocks=n_clocks, 
-                                               number_events=n_events, 
-                                               purity=purity, 
-                                               coverage=coverage, 
-                                               epsilon=epsilon, 
-                                               seed = seed)
+                                          number_events=n_events, 
+                                          purity=purity, 
+                                          coverage=coverage, 
+                                          epsilon=epsilon, 
+                                          seed = seed,
+                                          mutations_per_segment = mutations_per_segment )
   
   data_simulation = as.data.frame(res_simulate$data_simulation) %>% mutate(chr= 1:length(res_simulate$data_simulation$taus))
   x = res_simulate$x
@@ -30,9 +32,9 @@ simulation_tickTack = function (n_clocks=3,
   df = x$cna %>% left_join(data_simulation)
   saveRDS(x, "input_data.rds")
   
- # timing inference ticktack hierarchical
+  # timing inference ticktack hierarchical
   x <- tickTack::fit_h(x, max_attempts=max_attempts, INIT=INIT, tolerance = tolerance)
-
+  
   results_simulated <- x$results_timing
   results_model_selection <- tickTack::model_selection_h(results_simulated)
   best_K <- results_model_selection$best_K
@@ -61,18 +63,21 @@ simulation_tickTack = function (n_clocks=3,
   
   
   # compare assignment for all the 3 methods so that it is easy to handle the results for analysis
-
-  clock_assignment <- results_simulated$draws_and_summary[[best_K]]$summarized_results %>% dplyr::select(segment_original_indx, segment_id, karyotype, chr, clock_mean)
   
-  clock_assignment <- clock_assignment %>% mutate(chr = as.integer(segment_original_indx))
+  clock_assignment <- results_simulated$draws_and_summary[[best_K]]$summarized_results %>% dplyr::select(segment_original_indx, segment_id, karyotype, chr, clock_mean, clock_low, clock_high)
   
-  compare_assignment <- clock_assignment %>% 
+  clock_assignment <- clock_assignment %>% mutate(chr = as.integer(segment_original_indx)) %>%
+    rename(time_tickTAck_median = clock_mean) %>%
+    rename(time_tickTAck_low = clock_low) %>%
+    rename(time_tickTAck_high = clock_high) %>%
+    
+    compare_assignment <- clock_assignment %>% 
     left_join(df, by = "chr") 
   
   
   compare_assignment %>% dplyr::rename(time_tickTack = clock_mean)
-
-
+  
+  
   
   ############## convert data from tickTack to vcf format #############
   
@@ -82,7 +87,7 @@ simulation_tickTack = function (n_clocks=3,
   vcf <- convert_to_vcf(x$mutations, x$cna, x$metadata)
   bb <- convert_to_granges(x$cna, x$mutations, x$metadata)
   clusters <- data.frame(cluster=1:1, proportion=c(purity), n_ssms=c(100))
-
+  
   mt <- MutationTimeR::mutationTime(vcf, bb, clusters=clusters, n.boot=10)
   mcols(bb) <- cbind(mcols(bb),mt$T)
   plot_MutTime <- MutationTimeR::plotSample(vcf,bb)
@@ -93,10 +98,28 @@ simulation_tickTack = function (n_clocks=3,
   cn_timed = bb
   
   cn_timed$chr <- cn_timed$time
+  cn_timed$time_low_MT <- cn_timed$time.lo
+  cn_timed$time_high_MT <- cn_timed$time.up
+  
   
   df_cn_timed <- as.data.frame(cn_timed$chr)
   colnames(df_cn_timed)[1] <- "time_MutTime" 
   df_cn_timed$chr <- rep(1:length(res_simulate$data_simulation$taus))
+  
+  df_cn_timed_low <- as.data.frame(cn_timed$time_low_MT)
+  colnames(df_cn_timed_low)[1] <- "time_MutTime_low" 
+  df_cn_timed_low$chr <- rep(1:length(res_simulate$data_simulation$taus))
+  
+  df_cn_timed_high <- as.data.frame(cn_timed$time_high_MT)
+  colnames(df_cn_timed_high)[1] <- "time_MutTime_high" 
+  df_cn_timed_high$chr <- rep(1:length(res_simulate$data_simulation$taus))
+  
+  
+  df_intervals_MT <- dplyr::full_join(df_cn_timed, df_cn_timed_low)
+  df_intervals_MT <- dplyr::full_join(df_intervals_MT, df_cn_timed_high)
+  
+  
+  
   compare_assignment <- compare_assignment %>%
     left_join(df_cn_timed, by = "chr") 
   
@@ -104,11 +127,10 @@ simulation_tickTack = function (n_clocks=3,
   
   compare_assignment <- compare_assignment %>% dplyr::mutate(clock_real_factor = as.numeric(factor(taus))) %>%
     dplyr::mutate(tickTack_estimate_factor = as.numeric(factor(clock_mean)))%>%
-    dplyr::mutate(MutTime_estimate_factor = as.numeric(factor(time_MutTime)))%>%
     dplyr::rename(real_clocks = taus)%>%
     dplyr::rename(time_tickTack = clock_mean)
-
-
+  
+  
   
   
   ################################ SINGLE SEGMENT #######################################################################
@@ -118,16 +140,18 @@ simulation_tickTack = function (n_clocks=3,
   fit <- tickTack::fit(segments = x$cna, mutations = x$mutations, purity = purity,
                        alpha = .05, min_mutations_number = 3,
                        beta_binomial = F, beta_binomial_disp = 0.01)
-
+  
   
   plot_single <- tickTack::plot_timing(fit, x$cna)
-
-
-  compare_assignment <- compare_assignment %>%
-    left_join(fit$summarized_results, by = "chr") %>% 
-    dplyr::rename(singleTT = tau_mean)
   
-
+  
+  compare_assignment <- compare_assignment %>%
+    left_join(fit$summarized_results, by = "chr") %>%                                           
+    rename(time_singleTT_low = tau_low) %>%
+    rename(time_singleTT_high = tau_high) %>%
+    dplyr::rename(singleTT = time_singleTT_median)
+  
+  
   res = list(data = df,
              compare_assignment = compare_assignment,
              plot_MutTime = plot_MutTime, res_MutTime = res_MutTime, 
