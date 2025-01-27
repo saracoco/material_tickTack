@@ -61,6 +61,7 @@ inst/do
 *.pdf
 
 # Simulation results
+simulations_v2/results/*
 results/*.rds
 plots/*.pdf
 plots/*.png
