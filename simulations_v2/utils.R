@@ -33,7 +33,7 @@ simulate_dataset = function(N_events, N_clocks, N_mutations, pi, coverage, sigma
   while (!all(diff(sort(taus)) >= min_dist)) {
     taus = runif(N_clocks, .01, .99)  
   }
-  taus = sample(taus, N_events, replace = TRUE)
+  taus_clust = taus = sample(taus, N_events, replace = TRUE)
   taus = lapply(taus, function(t) {rnorm(1, t, sigma_tau)}) %>% unlist()
   
   karyotypes = sample(c("2:0", "2:1", "2:2"), N_events, replace = TRUE)
@@ -91,7 +91,7 @@ simulate_dataset = function(N_events, N_clocks, N_mutations, pi, coverage, sigma
   sim_mult <- lapply(1:N_events, function(i) { sim_data[[i]]$mult }) %>% do.call("rbind", .)
   sim_muts <- lapply(1:N_events, function(i) { sim_data[[i]]$muts }) %>% do.call("rbind", .)
   
-  list(cn=sim_cn, mult=sim_mult, muts=sim_muts, true_taus = taus)
+  list(cn=sim_cn, mult=sim_mult, muts=sim_muts, true_taus = taus, taus_clust=taus_clust)
 }
 
 fit_AmpTimeR = function(sim) {
