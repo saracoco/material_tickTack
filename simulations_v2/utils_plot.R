@@ -1,12 +1,18 @@
 
 ALPHA = .8
-color = c(
-  'AmplificationTimeR' = alpha('forestgreen', alpha = ALPHA),
-  'MutationTimeR' = alpha('steelblue', alpha = ALPHA),
-  'tickTack' = alpha('orange', alpha = ALPHA),
-  'tickTackH' = alpha('firebrick3', alpha = ALPHA)
-)
+# color = c(
+#   'AmplificationTimeR' = alpha('forestgreen', alpha = ALPHA),
+#   'MutationTimeR' = alpha('steelblue', alpha = ALPHA),
+#   'tickTack' = alpha('orange', alpha = ALPHA),
+#   'tickTackH' = alpha('firebrick3', alpha = ALPHA)
+# )
 
+color = c(
+  'AmplificationTimeR' = alpha('#868686', alpha = ALPHA),
+  'MutationTimeR' = alpha('#EFC000', alpha = ALPHA),
+  'tickTack' = alpha('#7AA6DC', alpha = ALPHA),
+  'tickTackH' = alpha('#CD534C', alpha = ALPHA)
+)
 
 convert_name = function(n) {
   if (grepl("AmpTime", n)) return("AmplificationTimeR")
@@ -27,7 +33,7 @@ plot_over_purity = function(all_res) {
 
   r %>%
     ggplot(mapping = aes(x = as.factor(purity), y=metric, fill=name)) +
-    geom_boxplot() +
+    geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     scale_y_continuous(transform = "log10") +
     labs(x = "Purity", y="Percent error", fill="") +
@@ -44,7 +50,7 @@ plot_over_coverage = function(all_res) {
 
   r %>%
     ggplot(mapping = aes(x = as.factor(coverage), y=metric, fill=name)) +
-    geom_boxplot() +
+    geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     scale_y_continuous(transform = "log10") +
     labs(x = "Coverage", y="Percent error", fill="") +
@@ -61,7 +67,7 @@ plot_over_nmutations = function(all_res) {
 
   r %>%
     ggplot(mapping = aes(x = as.factor(n_mutations), y=metric, fill=name)) +
-    geom_boxplot() +
+    geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     scale_y_continuous(transform = "log10") +
     labs(x = "N mutations", y="Percent error", fill="") +
@@ -78,7 +84,7 @@ plot_nclocks_v_nevents = function(all_res) {
 
   r %>%
     ggplot(mapping = aes(x = as.factor(n_events), y=metric, fill=name)) +
-    geom_boxplot() +
+    geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     ggh4x::facet_nested(~"N tau"+n_clocks) +
     scale_y_continuous(transform = "log10") +
@@ -93,7 +99,7 @@ plot_rand_index = function(res_clust) {
     dplyr::select(n_clocks, n_events, AmplificationTimeR, MutationTimeR, tickTack, tickTackH) %>%
     tidyr::pivot_longer(c(AmplificationTimeR, MutationTimeR, tickTack, tickTackH)) %>%
     ggplot(mapping = aes(x = name, y=value, fill=name)) +
-    geom_boxplot() +
+    geom_boxplot(lwd=.3, outlier.size = .5) +
     ggh4x::facet_nested("N segments"+n_events~"N tau"+n_clocks) +
     scale_y_continuous(breaks = scales::pretty_breaks(n=3)) +
     theme_bw() +
