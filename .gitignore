@@ -57,8 +57,6 @@ inst/do
 
 # Images #
 ##################
-.png
-*.pdf
 
 # Simulation results
 simulations_v2/err
