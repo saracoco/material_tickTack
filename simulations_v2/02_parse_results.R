@@ -1,5 +1,6 @@
 
 rm(list = ls())
+require(tidyverse)
 
 res_folder = "results/" 
 res_names = list.files(res_folder)

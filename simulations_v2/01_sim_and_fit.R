@@ -44,6 +44,7 @@ for (i.iter in 1:10) {
   merged_res = dplyr::tibble(
     segment_idx = res_AmpTimeR$segment_idx,
     true_tau = sim$true_taus,
+    true_tau_cluster = sim$taus_clust,
     tau_AmpTimeR = res_AmpTimeR$tau,
     tau_MutTimeR = res_MutTime$cn_timed$time,
     tau_tickTack = res_tickTack_single$summarized_results$tau_mean,

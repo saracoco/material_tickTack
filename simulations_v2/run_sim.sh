@@ -5,11 +5,12 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=100gb
+#SBATCH --mem=20gb
+#SBATCH --exclude=epyc005
 #SBATCH --time=48:00:00
-#SBATCH --output=out/tickTack_sim_%A_%a
-#SBATCH --error=err/tickTack_sim_err_%A_%a
-#SBATCH --array=1-120
+#SBATCH --output=out/%a
+#SBATCH --error=err/%a
+#SBATCH --array=1-540
 
 module load R
 echo $SLURM_ARRAY_TASK_ID
@@ -35,5 +36,7 @@ echo $tolerance
 echo $max_attempts
 echo $seed
 echo $n_mutations
+
+echo "NR==${SLURM_ARRAY_TASK_ID}"
 
 Rscript 01_sim_and_fit.R ${n_clocks} ${n_events} ${purity} ${coverage} ${epsilon} ${tolerance} ${max_attempts} ${seed} ${n_mutations}
