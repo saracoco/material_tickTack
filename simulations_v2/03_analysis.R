@@ -29,4 +29,4 @@ sim_plot = error_over_nmuts + error_over_clocks_and_muts + rand_index_plot +
     plot.tag = element_text(face = "bold")
   )
 
-ggsave("plot/sim_plot.pdf", units = "in", dpi = 600, width = 8, height = 10, plot = sim_plot)
+ggsave("plot/sim_plot.pdf", units = "in", dpi = 600, width = 12, height = 12, plot = sim_plot)
