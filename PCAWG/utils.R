@@ -81,3 +81,38 @@ parse_summarized_results <- function(results) {
     dplyr::mutate(clock_rank = dplyr::dense_rank(clock_mean)) %>% 
     dplyr::select(chr, from, to, segment_id, karyotype, clock_mean, clock_low, clock_high, clock_rank)
 }
+
+add_drivers_per_ttype_to_results <- function(RES) {
+  load("data/gene_coordinates_hg19.rda")
+  
+  metadata_samples <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t")
+  
+  drivers_per_ttype = list()
+  for (t in unique(metadata_samples$ttype)) {
+    drivers <- metadata_samples %>% 
+      dplyr::filter(ttype == t) %>% 
+      dplyr::pull(gene) %>% 
+      unique()
+    drivers_per_ttype[[t]] = drivers
+  }  
+  
+  new_res <- lapply(1:nrow(RES), function(i) {
+    print(i)
+    seg <- RES[i,]  
+    
+    genes_found <- gene_coordinates_hg19 %>% 
+      dplyr::filter(chr == seg$chr) %>% 
+      dplyr::filter(from >= seg$from, to <= seg$to) %>% 
+      dplyr::pull(gene)
+    
+    driver_genes <- genes_found[genes_found %in% drivers_per_ttype[[seg$ttype]]]
+    
+    if (length(driver_genes) == 0) {
+      driver_genes <- c("None")
+    }
+    
+    dplyr::bind_cols(seg, dplyr::tibble(driver = driver_genes))
+  }) %>% do.call("bind_rows", .)
+  
+  new_res
+}

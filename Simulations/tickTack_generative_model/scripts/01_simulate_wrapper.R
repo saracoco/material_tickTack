@@ -8,6 +8,7 @@ epsilon <- as.double(args[5])
 tolerance <- as.double(args[6])
 max_attempts <- as.double(args[7])
 seed <- as.double(args[8])
+mutations_per_segment <- as.double(args[9])
 
 print("01_simulate_wrapper")
 print (paste0("n_clocks: ",n_clocks)) 
@@ -18,6 +19,8 @@ print(paste0("epsilon: ",epsilon))
 print(paste0("tolerance: ",tolerance)) 
 print(paste0("max_attempts: ",max_attempts)) 
 print(paste0("seed: ",seed)) 
+print(paste0("mutations_per_segment: ",mutations_per_segment)) 
+
 
 
 .libPaths(new="~/R/rstudio_v3/") 
@@ -31,7 +34,7 @@ print("01_simulate_wrapper")
 
 original_dir <- getwd()
 cat(original_dir)
-self_name = as.character(paste0("/tickTack_sim_",n_clocks,"_",n_events,"_",purity,"_",coverage,"/",seed))
+self_name = as.character(paste0("/tickTack_sim_",n_clocks,"_",n_events,"_",purity,"_",coverage,"_",mutations_per_segment,"/",seed))
 new_dir = paste0(original_dir,self_name)
 cat(new_dir)
 setwd(new_dir)
@@ -39,15 +42,16 @@ setwd(new_dir)
 
 # al variare del seed dovrei farlo per 20 simulazioni quindi 20 seed diversi
 res <- simulation_tickTack(n_clocks=n_clocks, 
-                                  n_events=n_events, 
-                                  purity=purity, 
-                                  coverage=coverage, 
-                                  epsilon=epsilon, 
-                                  seed = seed, 
-                                  tolerance = tolerance,
-                                  max_attempts = max_attempts,
-                                  INIT = TRUE,
-                                  min_mutations_number = 4)
+                           n_events=n_events, 
+                           purity=purity, 
+                           coverage=coverage, 
+                           epsilon=epsilon, 
+                           seed = seed, 
+                           tolerance = tolerance,
+                           max_attempts = max_attempts,
+                           INIT = TRUE,
+                           min_mutations_number = 4,
+                           mutations_per_segment = mutations_per_segment)
 
 
 model_selection_tibble <- res$res_tickTack$results_model_selection$model_selection_tibble
@@ -61,7 +65,7 @@ for (i in unique_K){
 }
 
 results_summary <- list(df_summary=df_summary_tickTack, model_selection_tibble = model_selection_tibble, compare_assignment = res$compare_assignment )
-saveRDS( results_summary , paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/Simulations/tickTack_generative_model/results_summary/res_", n_clocks,"_",n_events,"_",purity,"_",coverage,"_",seed, ".rds"))
+saveRDS( results_summary , paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/Simulations/tickTack_generative_model/results_summary_new/res_", n_clocks,"_",n_events,"_",purity,"_",coverage,"_",mutations_per_segment,"_",seed, ".rds"))
 
 
 saveRDS(res$res_MutTime, "results/res_MutTime.rds")
@@ -73,4 +77,4 @@ saveRDS(res$compare_assignment, "results/compare_assignment.rds")
 ggsave("plots/plot_SingleTT.png", plot= res$plot_SingleTT, height=5, width=10)
 ggsave("plots/plot_tickTack.png", plot= res$plot_tickTack, height=5, width=10)
 
-  
+

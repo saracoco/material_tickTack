@@ -35,15 +35,15 @@ get_major = function (k, get_minor = FALSE){
 #' get_taus_karyo()
 
 get_taus_karyo = function (number_events,
-                                vector_tau, vector_karyo,
-                                weigths_tau, weights_karyo ){
-
+                           vector_tau, vector_karyo,
+                           weigths_tau, weights_karyo ){
+  
   taus <- sample( vector_tau[1:length(vector_tau)], number_events, replace=TRUE, prob=weigths_tau )
   karyo <- sample( vector_karyo[1:length(vector_karyo)], number_events, replace=TRUE, prob=weights_karyo )
   
-
+  
   return(list(taus=taus,karyo=karyo))
-
+  
 }
 
 
@@ -62,10 +62,14 @@ get_taus_karyo = function (number_events,
 #' get_taus_karyo()
 
 get_taus_karyo_gerstrung = function (number_events,
-                           vector_tau, vector_karyo,
-                           weigths_tau, weights_karyo, chromosomes=c(1:22) ){
+                                     vector_tau, vector_karyo,
+                                     weigths_tau, weights_karyo, chromosomes=c(1:22) ){
   
-  taus <- sample( vector_tau[1:length(vector_tau)], number_events, replace=TRUE, prob=weigths_tau )
+  taus <- sample( vector_tau[1:length(vector_tau)], number_events, replace=TRUE, prob=weigths_tau ) 
+  for (i in 1:length(taus)){
+    perturbation <- rnorm(1,0.04,0.05)
+    taus[i] = taus[i] + perturbation
+  }
   karyo <- sample( vector_karyo[1:length(vector_karyo)], number_events, replace=TRUE, prob=weights_karyo )
   chr <- sample(chromosomes, number_events, replace = FALSE)
   
@@ -92,30 +96,30 @@ get_taus_karyo_gerstrung = function (number_events,
 #' @examples
 #' get_simulation()
 
-get_simulation = function (taus, karyotypes, purity = 0.9, time_interval = 20, l = 1e7, mu = 1e-4, w = 1e-2, coverage = 100){
-
+get_simulation = function (taus, karyotypes, purity = 0.9, time_interval = 20, l = 1e7, mu = 1e-4, w = 1e-2, coverage = 100, mutations_per_segment = 10){
+  
   S = length(karyotypes)
   names <- paste("segment", 1:S,sep = " ")
   data_all_segments <- dplyr::tibble()
   
-
+  
   for (j in 1:S) {
     tau <- taus[j]
     karyotype <- karyotypes[j]
     #print(tau)
-    data_single_segment <- simulate_mutations(karyotype, time_interval = time_interval, tau = tau, l = l, mu = mu, w = w, segment_id = j)
+    data_single_segment <- simulate_mutations(karyotype, time_interval = time_interval, tau = tau, l = l, mu = mu, w = w, segment_id = j, mutations_per_segment = mutations_per_segment)
     data_single_segment <- add_DP_and_NV(karyotype, data_single_segment, coverage = coverage, purity = purity)
-
+    
     data_single_segment$tau = tau
     data_single_segment$segment_name = names[j]
     data_all_segments <- dplyr::bind_rows(data_all_segments, data_single_segment)
   }
-
+  
   peaks_all_segments <- matrix(0, nrow = S, ncol = 2)
   for (i in 1:S) {
     peaks_all_segments[i,] <- get_clonal_peaks(karyotype, purity)
   }
-
+  
   return(data_all_segments)
 }
 
@@ -139,7 +143,7 @@ get_simulation = function (taus, karyotypes, purity = 0.9, time_interval = 20, l
 #' simulate_mutations()
 
 
-simulate_mutations = function(karyotype, time_interval, tau, l, mu, w, segment_id = "segment_id") {
+simulate_mutations = function(karyotype, time_interval, tau, l, mu, w, segment_id = "segment_id", mutations_per_segment = 10) {
   available_karyotypes = c('2:0', '2:1', '2:2')
   # Check input
   if (!(time_interval > 0)) stop("time_interval must be a positive real number!")
@@ -148,25 +152,25 @@ simulate_mutations = function(karyotype, time_interval, tau, l, mu, w, segment_i
   if (!(mu > 0)) stop("mu, the mutation rate, must be a positive real number!")
   if (!(w > 0)) stop("w, the cell division rate, must be a positive real number!")
   if (!(karyotype %in% available_karyotypes)) stop("input karyotype is not available!")
-
+  
   # Create time intervals
   t1 = time_interval * tau
   t2 = time_interval - t1
-
+  
   # Extract nA and nB
   multiplicities = strsplit(karyotype, ":") %>% unlist() %>% as.numeric()
   nA = multiplicities[1]
   nB = multiplicities[2]
-
+  
   # Init vector of used mutations
   used = c()
   all_mutations_df <- data.frame(mutation = c(), allele = c(), type = c())
-
+  
   generate_mutations <- function(allele, l, mu, w, dt, type) {
-
+    
     rate <- l * mu * w * dt
     n_mutations <- rpois(1, lambda = rate)
-
+    
     if (n_mutations >= 1) {
       mutations <- lapply(c(1:n_mutations), function(i) {
         repeat{
@@ -176,7 +180,7 @@ simulate_mutations = function(karyotype, time_interval, tau, l, mu, w, segment_i
         used <<- c(used, id) # <<- changes global value
         id
       })
-
+      
       mutations_df <- data.frame(
         mutation = mutations %>% unlist(),
         allele = allele,
@@ -187,31 +191,34 @@ simulate_mutations = function(karyotype, time_interval, tau, l, mu, w, segment_i
       return(data.frame(mutation = c(), allele = c(), type = c()))
     }
   }
-
+  
   # Simulate mutations on A
   if (nA == 2) {
     m1 <- generate_mutations("A1A2", l, mu, w, t1, "shared")
     m2 <- generate_mutations("A1", l, mu, w, t2, "private")
     m3 <- generate_mutations("A2", l, mu, w, t2, "private")
-
+    
     all_mutations_df <- bind_rows(all_mutations_df, m1, m2, m3)
   }
-
+  
   # Simulate mutations on B
   if (nB == 2) {
     m1 <- generate_mutations("B1B2", l, mu, w, t1, "shared")
     m2 <- generate_mutations("B1", l, mu, w, t2, "private")
     m3 <- generate_mutations("B2", l, mu, w, t2, "private")
-
+    
     all_mutations_df <- bind_rows(all_mutations_df, m1, m2, m3)
   } else if (nB == 1) {
     m1 <- generate_mutations("B1", l, mu, w, time_interval, "private")
     all_mutations_df <- bind_rows(all_mutations_df, m1)
   }
-
+  
   if (!(nrow(all_mutations_df) > 0)) stop("no mutations were simulated with the given parameters!")
   all_mutations_df <- all_mutations_df %>% mutate(karyotype = karyotype, segment_id = segment_id, , segment_name_real = segment_id)  # understand how to handle it in a better way
   all_mutations_df
+  
+  all_mutations_df <- all_mutations_df[sample(nrow(all_mutations_df), mutations_per_segment), ]
+  
 }
 
 
@@ -233,7 +240,7 @@ add_DP_and_NV = function(karyotype, simulated_mutations, coverage, purity) {
   multiplicities = strsplit(karyotype, ":") %>% unlist() %>% as.numeric()
   nA = multiplicities[1]
   nB = multiplicities[2]
-
+  
   peak <- function(m, n, purity) {
     num <- m * purity
     den <- (1 - purity) * 2 + n * purity
@@ -242,19 +249,19 @@ add_DP_and_NV = function(karyotype, simulated_mutations, coverage, purity) {
   # Simulate DP and NV values for shared mutation
   p <- peak(nA, nA + nB, purity)
   shared_mutations <- simulated_mutations %>% filter(type == "shared")
-
+  
   n <- nrow(shared_mutations)
   shared_mutations$DP <- rpois(n, coverage)
   shared_mutations$NV <- rbinom(n, size = shared_mutations$DP, prob = p)
-
+  
   # Simulate DP and NV values for private mutation
   p <- peak(1, nA + nB, purity)
   private_mutations <- simulated_mutations %>% filter(type == "private")
-
+  
   n <- nrow(private_mutations)
   private_mutations$DP <- rpois(n, coverage)
   private_mutations$NV <- rbinom(n, size = private_mutations$DP, prob = p)
-
+  
   return(bind_rows(private_mutations, shared_mutations))
 }
 
