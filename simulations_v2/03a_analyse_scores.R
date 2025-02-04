@@ -32,13 +32,33 @@ df_scores %>%
   geom_point() +
   geom_line() +
   theme_bw() +
-  labs(x = "Quantile q", y="Average rank")
+  labs(x = "Quantile q", y="Average rank") +
+  ggtitle("Cluster 1 to 5")
 
-all_res %>% 
-  dplyr::filter(n_clocks > 1) %>% 
-  dplyr::group_by(score, n_clocks, n_events, purity, coverage, n_mutations) %>% 
-  dplyr::summarise(m = median(RandIndex), .groups = "drop") %>% 
-  dplyr::group_by(n_clocks, n_events, purity, coverage, n_mutations) %>% 
-  dplyr::filter(m == max(m)) %>% 
-  dplyr::pull(score) %>% 
-  table()
+ggsave("plot/ranks_1_to_5.pdf", width = 10, height = 10, units = "in", dpi=600)
+
+
+df_scores = lapply(seq(.01, .99, length = 20) , function(q) {
+  all_res %>% 
+    dplyr::filter(n_clocks > 2) %>% 
+    dplyr::group_by(score, n_clocks, n_events) %>% 
+    dplyr::summarise(m = stats::quantile(RandIndex, q), .groups = "drop") %>% 
+    dplyr::group_by(n_clocks, n_events) %>% 
+    dplyr::arrange(-m, .by_group = TRUE) %>%
+    dplyr::mutate(rank = dense_rank(-m)) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(score) %>% 
+    dplyr::summarise(avg_rank = mean(rank)) %>% 
+    dplyr::arrange(avg_rank) %>% 
+    dplyr::mutate(q = q)
+}) %>% do.call("bind_rows", .)
+
+df_scores %>% 
+  ggplot(mapping = aes(x=q, y=avg_rank, col=score)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Quantile q", y="Average rank") +
+  ggtitle("Cluster 3 to 5")
+
+ggsave("plot/ranks_3_to_5.pdf", width = 10, height = 10, units = "in", dpi=600)
