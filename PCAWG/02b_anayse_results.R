@@ -7,6 +7,12 @@ library(tibble)
 require(tidyverse)
 source("utils.R")
 
+k_colors = list(
+  '2:0' = 'turquoise4',
+  '2:1' = ggplot2::alpha('orange', .8),
+  '2:2' = 'firebrick3'  
+)
+
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>% 
   dplyr::select(sample_id, ttype) %>% 
   dplyr::distinct()
@@ -14,7 +20,7 @@ ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public
 RES = readRDS("results/summary_all_samples.rds")
 
 # Look at statistics
-RES %>% 
+p_sample_distribution_over_ttype <- RES %>% 
   dplyr::select(ttype, sample_id) %>% 
   dplyr::distinct() %>% 
   dplyr::group_by(ttype) %>% 
@@ -24,51 +30,137 @@ RES %>%
   ggplot2::ggplot(mapping = aes(x=ttype, y=n)) +
   ggplot2::geom_col() +
   ggplot2::coord_flip() +
-  theme_bw()
+  theme_bw() +
+  labs(x = "Tumour type", y = "N sample") +
+  ggtitle(paste0("Total samples = ", RES$sample_id %>% unique() %>% length()))
+p_sample_distribution_over_ttype
+ggsave("plot/ttype_distributions.pdf", width = 10, height =10, units="in", dpi=300)
 
-ggsave("plot/ttype_distributions.png", width = 10, height =10, units="in", dpi=300)
-
-RES$ttype %>% unique()
-
-RES %>% 
+p_karyotype_distribution_over_ttype <- RES %>% 
   dplyr::group_by(ttype, karyotype) %>% 
   dplyr::summarise(n = n()) %>% 
-  dplyr::ungroup() %>% 
+  ggplot(mapping = aes(x=ttype, y=n, fill = karyotype)) +
+  geom_bar(position="dodge", stat="identity") +
+  ggplot2::coord_flip() +
+  theme_bw() +
+  labs(x = "Tumour type", y = "N events", fill="") +
+  ggtitle("Number of simple CNA events by karyotype and tyumour type") +
+  scale_fill_manual(values = k_colors)
+p_karyotype_distribution_over_ttype
+ggsave("plot/karyotype_distribution_over_ttype.pdf", width = 10, height =10, units="in", dpi=300)
+
+p_karyotype_per_sample_dist <- RES %>% 
   dplyr::group_by(ttype) %>% 
-  dplyr::mutate(f = n / sum(n)) %>% 
-  ggplot2::ggplot(mapping = aes(x=karyotype, y=n)) +
-  ggplot2::geom_col() +
-  facet_wrap(.~ttype, scales = "free_y") +
-  theme_bw()
+  dplyr::mutate(n_samples = length(unique(sample_id))) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::group_by(ttype, karyotype) %>% 
+  dplyr::mutate(nevents = n()) %>% 
+  dplyr::select(ttype, nevents, n_samples, karyotype) %>% 
+  dplyr::distinct() %>% 
+  dplyr::mutate(events_per_sample = nevents / n_samples) %>% 
+  dplyr::group_by(ttype) %>% 
+  dplyr::mutate(s = sum(events_per_sample)) %>%  
+  ggplot(mapping = aes(x=reorder(ttype, +s), y=events_per_sample, fill = karyotype)) +
+  geom_bar(position="dodge", stat="identity") +
+  ggplot2::coord_flip() +
+  theme_bw() +
+  labs(x = "Tumour type", y = "N events per sample", fill="") +
+  ggtitle("Number of simple CNA events by karyotype and tyumour type") +
+  scale_fill_manual(values = k_colors)
+p_karyotype_per_sample_dist
+ggsave("plot/karyotype_per_sample_dist.pdf", width = 10, height =10, units="in", dpi=300)
 
 # Classify each segment by Gene
 res_w_drivers = readRDS("results/res_w_onco_and_ts.rds")
 
-driver_order_by_clock = res_w_drivers %>% 
-  dplyr::group_by(gene) %>% 
-  dplyr::summarise(median_clock = median(clock_mean)) %>% 
-  dplyr::arrange(-median_clock) %>% 
-  dplyr::pull(gene)
+# Plot type of karyotypes by type of event
+p_k_per_gene_dist <- res_w_drivers %>% 
+  dplyr::filter(type != "Multiple") %>% 
+  dplyr::group_by(type, karyotype) %>% 
+  dplyr::mutate(n = n()) %>% 
+  dplyr::select(type, karyotype, n) %>% 
+  dplyr::distinct() %>% 
+  ggplot(mapping = aes(x=type, y=n, fill=karyotype)) +
+  geom_bar(position="dodge", stat="identity") +
+  theme_bw() +
+  scale_fill_manual(values = k_colors) +
+  labs(x = "Gene type", y = "N events", fill = "CN") + 
+  ggtitle("N events per gene type")
+p_k_per_gene_dist
+ggsave("plot/p_k_per_gene_dist.pdf", width = 10, height =10, units="in", dpi=300)
 
-res_w_drivers %>% 
-  dplyr::mutate(gene = factor(gene, levels = c(driver_order_by_clock))) %>% 
-  ggplot(mapping = aes(x=gene, y=clock_mean, col=type)) +
-  geom_boxplot() +
-  facet_wrap(~ttype) +
-  labs(x = "Driver gene", y = "Mean clock") +
-  theme_bw()
-  
+p_k_per_gene_dist_frac <- res_w_drivers %>% 
+  dplyr::filter(type != "Multiple") %>% 
+  dplyr::group_by(type, karyotype) %>% 
+  dplyr::mutate(n = n()) %>% 
+  dplyr::select(type, karyotype, n) %>% 
+  dplyr::distinct() %>% 
+  dplyr::group_by(type) %>% 
+  dplyr::mutate(f = n / sum(n)) %>% 
+  ggplot(mapping = aes(x=type, y=f, fill=karyotype)) +
+  geom_bar(position="dodge", stat="identity") +
+  theme_bw() +
+  scale_fill_manual(values = k_colors) +
+  labs(x = "Gene type", y = "F events", fill = "CN") + 
+  ggtitle("Fraction of events per gene type")
+p_k_per_gene_dist_frac
+ggsave("plot/p_k_per_gene_dist_frac.pdf", width = 10, height =10, units="in", dpi=300)
+
 # Select tumour types
-tumour_type = "CLLE"
+
+p_cluster_v_events_ttype <- RES %>% 
+  dplyr::group_by(ttype, sample_id) %>% 
+  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
+  dplyr::select(sample_id, n_events, n_clusters) %>% 
+  dplyr::distinct() %>% 
+  ggplot(mapping = aes(x=n_events, y=n_clusters)) +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ttype)
+p_cluster_v_events_ttype
+ggsave("plot/p_cluster_v_events_ttype.pdf", width = 10, height =10, units="in", dpi=300)
+
+p_drivers_cluster_v_events_ttype <- res_w_drivers %>% 
+  dplyr::group_by(ttype, sample_id) %>% 
+  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
+  dplyr::select(sample_id, n_events, n_clusters) %>% 
+  dplyr::distinct() %>% 
+  ggplot(mapping = aes(x=n_events, y=n_clusters)) +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ttype) +
+  ggtitle("Drivers only")
+p_drivers_cluster_v_events_ttype
+ggsave("plot/p_drivers_cluster_v_events_ttype.pdf", width = 10, height =10, units="in", dpi=300)
+
+p_tau_dist_driver_events_ttype <- res_w_drivers %>% 
+  #dplyr::filter(ttype == tumour_type) %>% 
+  ggplot2::ggplot(mapping = aes(x=type, y=clock_mean)) +
+  geom_violin() +
+  theme_bw() +
+  facet_wrap(~ttype) +
+  coord_flip()
+p_tau_dist_driver_events_ttype
+ggsave("plot/p_tau_dist_driver_events_ttype.pdf", width = 10, height =10, units="in", dpi=300)
 
 res_w_drivers %>% 
-  dplyr::filter(ttype == tumour_type) %>% 
-  dplyr::group_by(sample_id) %>% 
-  dplyr::summarise(n_clock = length(unique(clock_mean))) %>% 
-  dplyr::pull(n_clock) %>% 
-  table()
+  #dplyr::filter(ttype == tumour_type) %>% 
+  ggplot2::ggplot(mapping = aes(x=type, y=clock_mean)) +
+  geom_violin() +
+  theme_bw() +
+  facet_wrap(~ttype) +
+  coord_flip()
+
+res_w_drivers %>% 
+  #dplyr::filter(ttype == tumour_type) %>% 
+  ggplot2::ggplot(mapping = aes(x=karyotype, y=clock_mean)) +
+  geom_violin() +
+  theme_bw() +
+  facet_wrap(~ttype)
+  
 
 # Filter drivers seen in at least a certain number of samples
+tumour_type = "OV"
 frequent_drivers <- res_w_drivers %>% 
   dplyr::filter(ttype == tumour_type) %>% 
   #dplyr::group_by(ttype, driver) %>% 
@@ -94,34 +186,47 @@ res_processed <- res_w_drivers %>%
 results <- vector("list", nrow(driver_pairs))
 
 # Calculate scores for each pair
-for (k in seq_len(nrow(driver_pairs))) {
+k = 69
+scores_df = lapply(1:nrow(driver_pairs), function(k) {
   print(k)
   pair <- driver_pairs[k, ]
   
-  score <- res_processed %>%
+  co_occurr_df = res_processed %>%
     filter(gene %in% c(pair$first_driver, pair$second_driver)) %>%
     group_by(sample_id) %>%
     mutate(n = n()) %>%
-    filter(n != 1) %>%
-    summarise(score = mean(ifelse(clock_rank[gene == pair$first_driver] < clock_rank[gene == pair$second_driver], 
-                                  -1, 
-                                  ifelse(clock_rank[gene == pair$first_driver] == clock_rank[gene == pair$second_driver], 0, 1)))) %>%
-    pull(score)
-  
-  n_samples = length(score)
-  score = mean(score)
-  
-  # Store result
-  results[[k]] <- tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples)
-}
+    filter(n != 1) %>% 
+    dplyr::select(sample_id, clock_rank, gene) %>% 
+    tidyr::pivot_wider(values_from = clock_rank, names_from = gene)
+  if (nrow(co_occurr_df)) {
+    n_pre = sum(co_occurr_df[,pair$first_driver] < co_occurr_df[,pair$second_driver])
+    n_coo = sum(co_occurr_df[,pair$first_driver] == co_occurr_df[,pair$second_driver])
+    n_post = sum(co_occurr_df[,pair$first_driver] > co_occurr_df[,pair$second_driver])
+    
+    # Simulated data: Replace these counts with your actual observed data
+    O_counts <- c(n_pre, n_coo, n_post)  # Observed frequencies for (-1, 0, 1)
+    #DescTools::MultinomCI(O_counts)
+    
+    # is the mean different from zero?
+    t_test <- t.test(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)), mu = 0)
+    t_test$p.value
+    
+    score = mean(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)))
+    n_samples = sum(O_counts)
+    
+    # Store result
+    return(tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples, p.value = t_test$p.value))
+  }
+}) %>% do.call("bind_rows", .)
 
-# Combine results into a single dataframe
-scores_df <- bind_rows(results)
+scores_df
 
 scores_df %>% 
+  dplyr::filter(p.value <= .05) %>% 
   na.omit() %>% 
   ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
   geom_tile() +
+  geom_text(aes(label=n_samples)) +
   scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white") +
   theme_bw() +
   labs(x = "Driver 1", y = 'Driver 2') +

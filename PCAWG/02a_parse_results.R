@@ -5,6 +5,7 @@ library(ggplot2)
 library(parallel)
 library(tibble)
 require(tidyverse)
+library(tickTack)
 source("utils.R")
 
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>% 
@@ -12,27 +13,29 @@ ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public
   dplyr::distinct()
 
 results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
+fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
 
+results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results/"
 fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
 
 IDs <- list.files(results_path)
+IDs = IDs[!grepl("single", IDs)]
 
 RES <- lapply(IDs, function(id) {
-  results_model_selection_path = paste0(results_path, id, "/results/results_model_selection.rds")
-  if (!file.exists(results_model_selection_path)) {
-    print(paste0("Skipping sample id ", id))
+  print(which(IDs == id) / length(IDs) * 100)
+  
+  tryCatch({
+    results = readRDS(paste0(results_path, id))
+    fit = readRDS(paste0(fits_path, unlist(strsplit(id, ".rds")), "/fit.rds"))
+    ttype = strsplit(fit$snvs$project_code, "-")[[1]][1]
+    df = dplyr::tibble(sample_id=id, ttype=ttype)
+    return(dplyr::bind_cols(df, parse_summarized_results(results)))
+  }, error = function(e) {
+    # Error handling
+    print(paste0("An error occurred:", id))
     return(NULL)
-  }
+  })
   
-  res_model_selection <- readRDS(results_model_selection_path)
-  results <- res_model_selection$best_fit$summarized_results
-  
-  fit = readRDS(paste0(fits_path, id, "/fit.rds"))
-  ttype = strsplit(fit$snvs$project_code, "-")[[1]][1]
-  
-  df = dplyr::tibble(sample_id=id, ttype=ttype)
-  
-  dplyr::bind_cols(df, parse_summarized_results(results))
 }) %>% do.call("bind_rows", .)
 
 saveRDS(RES, "results/summary_all_samples.rds")

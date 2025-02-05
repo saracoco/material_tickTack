@@ -4,6 +4,7 @@ library(ggplot2)
 library(parallel)
 library(tibble)
 source("utils.R")
+
 # sshfs Orfeo:/orfeo/scratch/cdslab dati_Orfeo
 results_path <- "~/dati_Orfeo/scocomello/material_tickTack/PCAWG/results_whole/"
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>% 
