@@ -45,16 +45,18 @@ annotate_cna = lapply(1:nrow(RES), classify_segment, data= RES)
 annotate_cna =Reduce(rbind, annotate_cna)
 annotate_cna = annotate_cna %>% filter(class != 'focal') %>% 
   mutate(class=paste0(chr, ':', class))
+
+write.csv(annotate_cna, 'data/annotated_cnas.csv')
 # Retrieve ttypes 
-retrieve_ttypes = function(i){
-  print(i)
-  cnaqc_fits = '~/dati_Orfeo/data/clonal_analysis_PCAWG/'
-  fit = readRDS(paste0(cnaqc_fits, i, '/fit.rds'))
-  ttype = strsplit(fit$snvs$project_code,'-')[[1]][1]
-  data.frame('sample_id'=i, 'code'=ttype)
-}
-with_cna_ttypes = lapply(strsplit(annotate_cna$sample_id %>% unique(), '.rds') %>% unlist(), retrieve_ttypes)  
-with_cna_ttypes = Reduce(rbind, with_cna_ttypes)
+# retrieve_ttypes = function(i){
+#   print(i)
+#   cnaqc_fits = '~/dati_Orfeo/data/clonal_analysis_PCAWG/'
+#   fit = readRDS(paste0(cnaqc_fits, i, '/fit.rds'))
+#   ttype = strsplit(fit$snvs$project_code,'-')[[1]][1]
+#   data.frame('sample_id'=i, 'code'=ttype)
+# }
+# with_cna_ttypes = lapply(strsplit(annotate_cna$sample_id %>% unique(), '.rds') %>% unlist(), retrieve_ttypes)  
+# with_cna_ttypes = Reduce(rbind, with_cna_ttypes)
 
 # annotate_cna = left_join(annotate_cna %>% rowwise() %>% 
 #                            mutate(sample_id = strsplit(sample_id, '.rds')[[1]]), 
