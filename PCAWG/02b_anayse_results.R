@@ -258,14 +258,13 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
           geom_vline(xintercept = 0, linetype = "dashed") +
           labs(x = "Score", y="Driver", fill="Score", size="N samples", col="Score")
         
-        ggsave(paste0("plot/scatters/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = scatterp)    
+        ggsave(paste0("plot/scatters/", tumour_type, ".png"), width = 5, height =5, units="in", dpi=300, plot = scatterp)    
         
         
       }
     }
   }
 }
-
 
 scores_df %>% 
   dplyr::filter(p.value <= .05) %>% 
