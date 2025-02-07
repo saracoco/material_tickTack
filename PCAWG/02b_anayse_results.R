@@ -160,77 +160,122 @@ res_w_drivers %>%
   
 
 # Filter drivers seen in at least a certain number of samples
-tumour_type = "OV"
-frequent_drivers <- res_w_drivers %>% 
-  dplyr::filter(ttype == tumour_type) %>% 
-  #dplyr::group_by(ttype, driver) %>% 
-  dplyr::group_by(gene) %>% 
-  dplyr::summarise(n = n()) %>% 
-  dplyr::filter(n >= 3) %>% 
-  dplyr::pull(gene)
-frequent_drivers
+unique(res_w_drivers$ttype)
 
-# Create all pairs of drivers
-driver_pairs <- expand.grid(first_driver = frequent_drivers, second_driver = frequent_drivers) %>%
-  dplyr::mutate(first_driver = as.character(first_driver), second_driver=as.character(second_driver)) %>% 
-  dplyr::filter(first_driver <= second_driver) # Avoid duplicate/reverse pairs
+tumour_type = "PRAD"
+k = 3
 
-# Precompute necessary data from res_w_drivers
-res_processed <- res_w_drivers %>%
-  group_by(sample_id) %>%
-  mutate(driver_in_pair = gene %in% frequent_drivers) %>%
-  filter(driver_in_pair) %>%
-  ungroup()
-
-# Initialize results as a list for better performance
-results <- vector("list", nrow(driver_pairs))
-
-# Calculate scores for each pair
-k = 69
-scores_df = lapply(1:nrow(driver_pairs), function(k) {
-  print(k)
-  pair <- driver_pairs[k, ]
+for (tumour_type in unique(res_w_drivers$ttype)) {
+  frequent_drivers <- res_w_drivers %>% 
+    dplyr::filter(ttype == tumour_type) %>% 
+    #dplyr::group_by(ttype, driver) %>% 
+    dplyr::group_by(gene) %>% 
+    dplyr::summarise(n = n()) %>% 
+    dplyr::filter(n >= 3) %>% 
+    dplyr::pull(gene)
   
-  co_occurr_df = res_processed %>%
-    filter(gene %in% c(pair$first_driver, pair$second_driver)) %>%
-    group_by(sample_id) %>%
-    mutate(n = n()) %>%
-    filter(n != 1) %>% 
-    dplyr::select(sample_id, clock_rank, gene) %>% 
-    tidyr::pivot_wider(values_from = clock_rank, names_from = gene)
-  if (nrow(co_occurr_df)) {
-    n_pre = sum(co_occurr_df[,pair$first_driver] < co_occurr_df[,pair$second_driver])
-    n_coo = sum(co_occurr_df[,pair$first_driver] == co_occurr_df[,pair$second_driver])
-    n_post = sum(co_occurr_df[,pair$first_driver] > co_occurr_df[,pair$second_driver])
+  if (length(frequent_drivers) > 0) {
+    # Create all pairs of drivers
+    driver_pairs <- expand.grid(first_driver = frequent_drivers, second_driver = frequent_drivers) %>%
+      dplyr::mutate(first_driver = as.character(first_driver), second_driver=as.character(second_driver)) %>% 
+      dplyr::filter(first_driver <= second_driver) # Avoid duplicate/reverse pairs
     
-    # Simulated data: Replace these counts with your actual observed data
-    O_counts <- c(n_pre, n_coo, n_post)  # Observed frequencies for (-1, 0, 1)
-    #DescTools::MultinomCI(O_counts)
+    # Precompute necessary data from res_w_drivers
+    res_processed <- res_w_drivers %>%
+      dplyr::filter(ttype == tumour_type) %>% 
+      group_by(sample_id) %>%
+      mutate(driver_in_pair = gene %in% frequent_drivers) %>%
+      filter(driver_in_pair) %>%
+      ungroup()
     
-    # is the mean different from zero?
-    t_test <- t.test(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)), mu = 0)
-    t_test$p.value
+    # Initialize results as a list for better performance
+    results <- vector("list", nrow(driver_pairs))
     
-    score = mean(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)))
-    n_samples = sum(O_counts)
+    # Calculate scores for each pair
+    scores_df = lapply(1:nrow(driver_pairs), function(k) {
+      print(k)
+      pair <- driver_pairs[k, ]
+      
+      co_occurr_df = res_processed %>%
+        filter(gene %in% c(pair$first_driver, pair$second_driver)) %>%
+        group_by(sample_id) %>%
+        mutate(n = n()) %>%
+        filter(n != 1) %>% 
+        dplyr::select(sample_id, clock_rank, gene) %>% 
+        tidyr::pivot_wider(values_from = clock_rank, names_from = gene)
+      
+      if (nrow(co_occurr_df) > 3) {
+        n_pre = sum(co_occurr_df[,pair$first_driver] < co_occurr_df[,pair$second_driver])
+        n_coo = sum(co_occurr_df[,pair$first_driver] == co_occurr_df[,pair$second_driver])
+        n_post = sum(co_occurr_df[,pair$first_driver] > co_occurr_df[,pair$second_driver])
+        
+        # Simulated data: Replace these counts with your actual observed data
+        O_counts <- c(n_pre, n_coo, n_post)  # Observed frequencies for (-1, 0, 1)
+        #DescTools::MultinomCI(O_counts)
+        
+        # is the mean different from zero?
+        t_test <- t.test(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)), mu = 0)
+        t_test$p.value
+        
+        score = mean(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)))
+        n_samples = sum(O_counts)
+        
+        # Store result
+        return(tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples, p.value = t_test$p.value))
+      }
+    }) %>% do.call("bind_rows", .)
     
-    # Store result
-    return(tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples, p.value = t_test$p.value))
+    if (nrow(scores_df) > 0) {
+      scores_df = scores_df %>% 
+        dplyr::filter(p.value <= .05) %>% 
+        na.omit()
+      
+      if (nrow(scores_df) > 0) {
+        mat = scores_df %>% 
+          dplyr::filter(p.value <= .05) %>% 
+          na.omit() %>% 
+          ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
+          geom_tile() +
+          geom_text(aes(label=n_samples)) +
+          scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+          theme_bw() +
+          labs(x = "Driver 1", y = 'Driver 2') +
+          ggtitle(tumour_type)
+        
+        ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = mat)    
+        
+        scatterp = scores_df %>% 
+          dplyr::filter(p.value <= .05) %>% 
+          na.omit() %>% 
+          dplyr::mutate() %>% 
+          ggplot(mapping = aes(x = score, y=first_driver, fill=score, size=n_samples, col=score, label=second_driver)) +
+          geom_point() +
+          theme_bw() +
+          ggrepel::geom_label_repel(col="black", size=4, fill=alpha('white', .1), min.segment.length = 0, box.padding = .5) +
+          lims(x = c(-1,1)) +
+          scale_color_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+          scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+          geom_vline(xintercept = 0, linetype = "dashed") +
+          labs(x = "Score", y="Driver", fill="Score", size="N samples", col="Score")
+        
+        ggsave(paste0("plot/scatters/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = scatterp)    
+        
+        
+      }
+    }
   }
-}) %>% do.call("bind_rows", .)
+}
 
-scores_df
 
 scores_df %>% 
   dplyr::filter(p.value <= .05) %>% 
   na.omit() %>% 
-  ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
-  geom_tile() +
-  geom_text(aes(label=n_samples)) +
-  scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white") +
+  dplyr::mutate() %>% 
+  ggplot(mapping = aes(x = score, y=first_driver, fill=score, size=n_samples, col=score, label=second_driver)) +
+  geom_point() +
   theme_bw() +
-  labs(x = "Driver 1", y = 'Driver 2') +
-  ggtitle(tumour_type)
-
-
-ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300)
+  ggrepel::geom_label_repel(col="black", size=4, box.padding = unit(-0.5, "lines")) +
+  lims(x = c(-1,1)) +
+  scale_color_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+  scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+  geom_vline(xintercept = 0, linetype = "dashed")
