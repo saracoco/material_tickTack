@@ -39,18 +39,31 @@ RES <- lapply(IDs, function(id) {
 }) %>% do.call("bind_rows", .)
 
 saveRDS(RES, "results/summary_all_samples.rds")
+RES = readRDS("results/summary_all_samples.rds")
+RES$ttype %>% unique()
 
+# Add arm-level annotation
 
 # Add Oncogenes and Tumour suppressor annotation to results
 load("data/gene_coordinates_hg19.rda")
 
 TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1")
 Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS")
+
+# TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1",
+#          "ARID1A", "ATM", "BAP1", "CDH1", "FANCD2", "MLH1", "NBN", "PBRM1", "RAD51C", "STK11",
+#          "MEN1", "TSC1", "TSC2", "DICER1", "CHEK2", "WT1", "EP300", "KMT2D", "KMT2C", "FBXW7",
+#          "SETD2", "SMARCA4", "NF2", "CDKN1B", "RUNX1", "SUFU", "SMARCB1")
+
+# Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS",
+#                "GNAS", "IDH1", "JAK2", "KIT", "MDM2", "MET", "NTRK1", "PDGFRA", "RET", "TERT",
+#                "FGFR1", "FGFR2", "FGFR3", "HRAS", "CDK4", "CDK6", "NOTCH1", "BCL2", "BCL6", 
+#                "FOXA1", "FOXP1", "ETV1", "ETV4", "ETV5", "FOS", "JUN", "SRC", "RSPO2", "RSPO3")
+
 genes_of_interest <- c(TSGs, Oncogenes)
 
 gene_coordinates_hg19 <- gene_coordinates_hg19 %>% 
   dplyr::filter(gene %in% genes_of_interest)
-
 
 library(purrr)
 

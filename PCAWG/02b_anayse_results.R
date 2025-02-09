@@ -162,10 +162,10 @@ res_w_drivers %>%
 # Filter drivers seen in at least a certain number of samples
 unique(res_w_drivers$ttype)
 
-tumour_type = "PRAD"
-k = 3
+tumour_type = "BOCA"
 
 for (tumour_type in unique(res_w_drivers$ttype)) {
+  print(tumour_type)
   frequent_drivers <- res_w_drivers %>% 
     dplyr::filter(ttype == tumour_type) %>% 
     #dplyr::group_by(ttype, driver) %>% 
@@ -214,16 +214,24 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
         #DescTools::MultinomCI(O_counts)
         
         # is the mean different from zero?
-        t_test <- t.test(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)), mu = 0)
-        t_test$p.value
+        samples = c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post))
+        if (all(samples == 0)) {
+          p_value = 1
+        } else if (all(samples == -1) | all(samples == 1)) {
+          p_value = .001
+        } else {
+          t_test <- t.test(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)), mu = 0)
+          p_value = t_test$p.value  
+        }
         
-        score = mean(c(rep(-1, n_pre), rep(0, n_coo), rep(1, n_post)))
+        score = mean(samples)
         n_samples = sum(O_counts)
         
         # Store result
-        return(tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples, p.value = t_test$p.value))
+        return(tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples, p.value = p_value))
       }
     }) %>% do.call("bind_rows", .)
+    
     
     if (nrow(scores_df) > 0) {
       scores_df = scores_df %>% 
@@ -242,7 +250,12 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
           labs(x = "Driver 1", y = 'Driver 2') +
           ggtitle(tumour_type)
         
-        ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = mat)    
+        ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = mat)
+        
+        scores_df <- dplyr::bind_rows(
+          scores_df,
+          dplyr::tibble(first_driver=scores_df$first_driver[1], second_driver="", score=0.0, n_samples = .0, p.value = .01)
+        )
         
         scatterp = scores_df %>% 
           dplyr::filter(p.value <= .05) %>% 
@@ -256,25 +269,12 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
           scale_color_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
           scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
           geom_vline(xintercept = 0, linetype = "dashed") +
-          labs(x = "Score", y="Driver", fill="Score", size="N samples", col="Score")
-        
-        ggsave(paste0("plot/scatters/", tumour_type, ".png"), width = 5, height =5, units="in", dpi=300, plot = scatterp)    
-        
-        
+          labs(x = "Score", y="Driver", fill="Score", size="N samples", col="Score") +
+	        ggtitle(tumour_type)
+
+  	    ggsave(paste0("plot/scatters/", tumour_type, ".png"), width = 5, height =5, units="in", dpi=300, plot = scatterp)
+  	    
       }
     }
   }
 }
-
-scores_df %>% 
-  dplyr::filter(p.value <= .05) %>% 
-  na.omit() %>% 
-  dplyr::mutate() %>% 
-  ggplot(mapping = aes(x = score, y=first_driver, fill=score, size=n_samples, col=score, label=second_driver)) +
-  geom_point() +
-  theme_bw() +
-  ggrepel::geom_label_repel(col="black", size=4, box.padding = unit(-0.5, "lines")) +
-  lims(x = c(-1,1)) +
-  scale_color_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
-  scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
-  geom_vline(xintercept = 0, linetype = "dashed")

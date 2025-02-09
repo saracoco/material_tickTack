@@ -1,4 +1,4 @@
-setwd('~/Documents/GitHub/material_tickTack/PCAWG')
+
 library(dplyr)
 library(ggplot2)
 library(parallel)
