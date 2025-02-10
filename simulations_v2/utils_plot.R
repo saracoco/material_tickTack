@@ -286,16 +286,21 @@ add_drivers_to_segment_plot = function(x, drivers_list, base_plot)
 
 merge_timing_and_segments <- function( x, K, colour_by = "karyotype", split_contiguous_segments = TRUE, chromosomes = paste0('chr', c(1:22)), max_Y_height = 6, cn = 'absolute', highlight = x$most_prevalent_karyotype, highlight_QC = FALSE) {
   
-  plot_CNA <- plot_segments_h(x)
+  #genome_len = CNAqc:::get_reference('hg19') %>% 
+  plot_CNA <- plot_segments_h(x) 
+  #cnaqc_x = CNAqc::init(mutations = x$mutations, cna = x$cna, purity = x$metadata$purity, ref = 'hg19')
+  #CNAqc::plot_segments(cnaqc_x)
                              
   data_plot <- plot_segments_tick_tack_data(x, K = K )+
-    ggplot2::theme(axis.title.x = element_blank())
+    ggplot2::theme(axis.title.x = element_blank()) 
   
   timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) 
   # segment_plot <- plot_segments_h(x, chromosomes, max_Y_height, cn, highlight, highlight_QC) +
   #   ggplot2::theme(axis.title.x = element_blank())  # Keep chromosome labels only on this plot
 
-  combined_plot <- plot_CNA / data_plot / timing_plot + plot_layout(ncol = 1, heights = c(1, 1,1))
+  #combined_plot <- plot_CNA / data_plot / timing_plot + plot_layout(ncol = 1, heights = c(1, 1,1))
+  combined_plot = ggpubr::ggarrange(
+    plot_CNA, data_plot,timing_plot, ncol=1, align = 'hv',heights = c(1,1,1), common.legend = T, legend = 'bottom')
   
   return(combined_plot)
 }
@@ -347,7 +352,9 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
     ' accepted segments'
   )
   
-  p <- ggplot2::ggplot() +
+  p <- 
+    #ggplot2::ggplot() +
+    CNAqc:::blank_genome('hg19')+
     ggplot2::geom_segment(
       data = summarized_results,
       ggplot2::aes(
@@ -369,16 +376,16 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
       alpha = 0.5
     ) +
     ggplot2::scale_fill_viridis_d(option = "cividis")  +  
-    ggplot2::scale_x_continuous(
-      breaks = reference_genome$to,
-      labels = gsub("chr", "", reference_genome$chr)
-    ) +
-    ggplot2::theme_bw() +
+    # ggplot2::scale_x_continuous(
+    #   breaks = reference_genome$to,
+    #   labels = gsub("chr", "", reference_genome$chr)
+    # ) +
+    #ggplot2::theme_bw() +
     ggplot2::theme(
       legend.position = "bottom",
       axis.text.x = ggplot2::element_text(angle = 0)
     ) +
-    ggplot2::lims(y = c(0, 1)) +
+    #ggplot2::lims(y = c(0, 1)) +
     ggplot2::labs(
       x = "Chromosome",
       y = bquote("Pseudotime"~tau),
@@ -446,7 +453,8 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
   
   six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
   
-  ggplot2::ggplot() +
+  #ggplot2::ggplot() +
+    CNAqc:::blank_genome(ref='hg19')+
     ggplot2::geom_point(
       data = matched_mutations, 
       ggplot2::aes(
@@ -457,20 +465,20 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
       alpha = 0.5,
       size=0.1
     ) +
-    ggplot2::scale_fill_viridis_d(option = "cividis")  +  
+    #ggplot2::scale_fill_viridis_d(option = "cividis")  +  
     ggplot2::scale_color_manual(values = k_colors, name = "CN") +  
     ggplot2::guides(
       color = ggplot2::guide_legend(override.aes = list(size = 4))) +
-    ggplot2::scale_x_continuous(
-      breaks = reference_genome$to,
-      labels = gsub("chr", "", reference_genome$chr)
-    ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      legend.position = "bottom",
-      axis.text.x = ggplot2::element_text(angle = 0)
-    ) +
-    ggplot2::lims(y = c(0, 1)) +
+    # ggplot2::scale_x_continuous(
+    #   breaks = reference_genome$to,
+    #   labels = gsub("chr", "", reference_genome$chr)
+    # ) +
+    #ggplot2::theme_bw() +
+    # ggplot2::theme(
+    #   legend.position = "bottom",
+    #   axis.text.x = ggplot2::element_text(angle = 0)
+    # ) +
+    #ggplot2::lims(y = c(0, 1)) +
     ggplot2::labs(
       x = "Chromosome",
       y = bquote("Variant Allele Frequency (VAF)") 
