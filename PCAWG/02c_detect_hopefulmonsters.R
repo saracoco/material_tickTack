@@ -9,7 +9,7 @@ source("utils.R")
 
 class_colors = list(
   'Classic' = "#91cf60",
-  'Hopeful Monster' = "#fee08b"
+  'HM' = "#fee08b"
 )
 
 k_colors = list(
@@ -43,37 +43,89 @@ RES %>%
   theme_bw() +
   facet_wrap(~ttype)
 
-q9 = data %>% 
-  dplyr::mutate(x = n_events / n_clusters) %>% 
-  dplyr::pull(x) %>% 
-  stats::quantile(.8)
+N_CHR = 10
 
-rr = RES %>% 
+RES %>% 
+  dplyr::group_by(sample_id) %>% 
   dplyr::group_by(ttype, sample_id) %>% 
   dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
-  dplyr::select(sample_id, n_events, n_clusters) %>% 
+  dplyr::mutate(n_chr = length(unique(chr))) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(sample_id, ttype, n_events, n_clusters, n_chr) %>% 
   dplyr::distinct() %>% 
-  dplyr::mutate(f = n_events / n_clusters) %>% 
-  dplyr::mutate(class = ifelse(f >= q9, "Hopeful Monster", "Classic")) 
+  ggplot(mapping = aes(x=n_events, y=n_clusters)) +
+  geom_point() +
+  facet_wrap(~ttype)
 
-rr %>% 
+df = RES %>% 
+  dplyr::group_by(sample_id) %>% 
+  dplyr::group_by(ttype, sample_id) %>% 
+  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
+  dplyr::mutate(n_chr = length(unique(chr))) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(sample_id, ttype, n_events, n_clusters, n_chr) %>% 
+  dplyr::distinct() %>% 
+  dplyr::mutate(class = ifelse(n_chr > N_CHR, "HM", "Classic")) 
+  
+df %>% 
   ggplot(mapping = aes(x=n_events, y=n_clusters, col=class)) +
   geom_point() +
-  theme_bw() +
   facet_wrap(~ttype) +
-  theme(legend.position = "bottom") +
-  labs(x = "N events", y="N clusters", col="") +
-  scale_color_manual(values = class_colors)
+  scale_color_manual(values = class_colors) +
+  theme_bw() +
+  labs(x = "N CNA", y= "N clusters", col="") +
+  scale_x_continuous(breaks = scales::pretty_breaks(n=3)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n=3))
+ggsave("plot/scatter_Ncna_v_Nclusters_with_HM.pdf", width = 8, height = 8, units = "in", plot = last_plot())
 
-rr %>% 
-  dplyr::group_by(ttype, class) %>% 
-  dplyr::summarise(n = n()) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::group_by(ttype) %>% 
-  dplyr::mutate(n = n / sum(n)) %>% 
+df %>% 
+  dplyr::group_by(ttype, class) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(ttype) %>%
+  dplyr::mutate(n = n / sum(n)) %>%
+  dplyr::filter(class == "HM") %>% 
   ggplot(mapping = aes(x=reorder(ttype, -n), y=n, fill=class)) +
   geom_bar(position="stack", stat="identity") +
   scale_fill_manual(values = class_colors) +
   theme_bw() +
-  coord_flip()
-  
+  coord_flip() +
+  scale_y_continuous(limits = c(0,1)) +
+  labs(x = "Tumour type", y="HM fraction") +
+  theme(legend.position = "none")
+ggsave("plot/distribution_of_HM_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = last_plot())
+
+# q9 = data %>% 
+#   dplyr::mutate(x = n_events / n_clusters) %>% 
+#   dplyr::pull(x) %>% 
+#   stats::quantile(.8)
+# 
+# rr = RES %>% 
+#   dplyr::group_by(ttype, sample_id) %>% 
+#   dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
+#   dplyr::select(sample_id, n_events, n_clusters) %>% 
+#   dplyr::distinct() %>% 
+#   dplyr::mutate(f = n_events / n_clusters) %>% 
+#   dplyr::mutate(class = ifelse(f >= q9, "Hopeful Monster", "Classic")) 
+# 
+# rr %>% 
+#   ggplot(mapping = aes(x=n_events, y=n_clusters, col=class)) +
+#   geom_point() +
+#   theme_bw() +
+#   facet_wrap(~ttype) +
+#   theme(legend.position = "bottom") +
+#   labs(x = "N events", y="N clusters", col="") +
+#   scale_color_manual(values = class_colors)
+# 
+# rr %>% 
+#   dplyr::group_by(ttype, class) %>% 
+#   dplyr::summarise(n = n()) %>% 
+#   dplyr::ungroup() %>% 
+#   dplyr::group_by(ttype) %>% 
+#   dplyr::mutate(n = n / sum(n)) %>% 
+#   ggplot(mapping = aes(x=reorder(ttype, -n), y=n, fill=class)) +
+#   geom_bar(position="stack", stat="identity") +
+#   scale_fill_manual(values = class_colors) +
+#   theme_bw() +
+#   coord_flip()
+#   
