@@ -43,19 +43,7 @@ RES %>%
   theme_bw() +
   facet_wrap(~ttype)
 
-N_CHR = 10
-
-RES %>% 
-  dplyr::group_by(sample_id) %>% 
-  dplyr::group_by(ttype, sample_id) %>% 
-  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
-  dplyr::mutate(n_chr = length(unique(chr))) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::select(sample_id, ttype, n_events, n_clusters, n_chr) %>% 
-  dplyr::distinct() %>% 
-  ggplot(mapping = aes(x=n_events, y=n_clusters)) +
-  geom_point() +
-  facet_wrap(~ttype)
+N_CHR = 11
 
 df = RES %>% 
   dplyr::group_by(sample_id) %>% 
@@ -85,7 +73,7 @@ df %>%
   dplyr::group_by(ttype) %>%
   dplyr::mutate(n = n / sum(n)) %>%
   dplyr::filter(class == "HM") %>% 
-  ggplot(mapping = aes(x=reorder(ttype, -n), y=n, fill=class)) +
+  ggplot(mapping = aes(x=reorder(ttype, n), y=n, fill=class)) +
   geom_bar(position="stack", stat="identity") +
   scale_fill_manual(values = class_colors) +
   theme_bw() +
@@ -94,6 +82,16 @@ df %>%
   labs(x = "Tumour type", y="HM fraction") +
   theme(legend.position = "none")
 ggsave("plot/distribution_of_HM_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = last_plot())
+
+RES %>% 
+  dplyr::group_by(sample_id) %>% 
+  dplyr::group_by(ttype, sample_id) %>% 
+  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
+  dplyr::mutate(n_chr = length(unique(chr))) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(sample_id, ttype, n_events, n_clusters, n_chr) %>% 
+  dplyr::distinct() %>% 
+  dplyr::mutate(class = ifelse(n_chr > N_CHR, "HM", "Classic"))
 
 # q9 = data %>% 
 #   dplyr::mutate(x = n_events / n_clusters) %>% 

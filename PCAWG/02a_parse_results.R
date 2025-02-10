@@ -21,14 +21,16 @@ fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
 IDs <- list.files(results_path)
 IDs = IDs[!grepl("single", IDs)]
 
+id = IDs[1]
 RES <- lapply(IDs, function(id) {
   print(which(IDs == id) / length(IDs) * 100)
   
   tryCatch({
     results = readRDS(paste0(results_path, id))
     fit = readRDS(paste0(fits_path, unlist(strsplit(id, ".rds")), "/fit.rds"))
+    ploidy = fit$ploidy
     ttype = strsplit(fit$snvs$project_code, "-")[[1]][1]
-    df = dplyr::tibble(sample_id=id, ttype=ttype)
+    df = dplyr::tibble(sample_id=id, ttype=ttype, ploidy=ploidy)
     return(dplyr::bind_cols(df, parse_summarized_results(results)))
   }, error = function(e) {
     # Error handling

@@ -34,6 +34,7 @@ p_sample_distribution_over_ttype <- RES %>%
   labs(x = "Tumour type", y = "N sample") +
   ggtitle(paste0("Total samples = ", RES$sample_id %>% unique() %>% length()))
 p_sample_distribution_over_ttype
+saveRDS(p_sample_distribution_over_ttype, "plot/ttype_distributions.rds")
 ggsave("plot/ttype_distributions.pdf", width = 10, height =10, units="in", dpi=300)
 
 p_karyotype_distribution_over_ttype <- RES %>% 
@@ -47,6 +48,7 @@ p_karyotype_distribution_over_ttype <- RES %>%
   ggtitle("Number of simple CNA events by karyotype and tyumour type") +
   scale_fill_manual(values = k_colors)
 p_karyotype_distribution_over_ttype
+saveRDS(p_karyotype_distribution_over_ttype, "plot/p_karyotype_distribution_over_ttype.rds")
 ggsave("plot/karyotype_distribution_over_ttype.pdf", width = 10, height =10, units="in", dpi=300)
 
 p_karyotype_per_sample_dist <- RES %>% 
@@ -68,6 +70,7 @@ p_karyotype_per_sample_dist <- RES %>%
   ggtitle("Number of simple CNA events by karyotype and tyumour type") +
   scale_fill_manual(values = k_colors)
 p_karyotype_per_sample_dist
+saveRDS(p_karyotype_per_sample_dist, "plot/p_karyotype_per_sample_dist.rds")
 ggsave("plot/karyotype_per_sample_dist.pdf", width = 10, height =10, units="in", dpi=300)
 
 # Classify each segment by Gene
@@ -87,6 +90,7 @@ p_k_per_gene_dist <- res_w_drivers %>%
   labs(x = "Gene type", y = "N events", fill = "CN") + 
   ggtitle("N events per gene type")
 p_k_per_gene_dist
+saveRDS(p_k_per_gene_dist, "plot/p_k_per_gene_dist.rds")
 ggsave("plot/p_k_per_gene_dist.pdf", width = 10, height =10, units="in", dpi=300)
 
 p_k_per_gene_dist_frac <- res_w_drivers %>% 
@@ -104,66 +108,13 @@ p_k_per_gene_dist_frac <- res_w_drivers %>%
   labs(x = "Gene type", y = "F events", fill = "CN") + 
   ggtitle("Fraction of events per gene type")
 p_k_per_gene_dist_frac
+saveRDS(p_k_per_gene_dist_frac, "plot/p_k_per_gene_dist_frac.rds")
 ggsave("plot/p_k_per_gene_dist_frac.pdf", width = 10, height =10, units="in", dpi=300)
 
 # Select tumour types
-
-p_cluster_v_events_ttype <- RES %>% 
-  dplyr::group_by(ttype, sample_id) %>% 
-  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
-  dplyr::select(sample_id, n_events, n_clusters) %>% 
-  dplyr::distinct() %>% 
-  ggplot(mapping = aes(x=n_events, y=n_clusters)) +
-  geom_point() +
-  theme_bw() +
-  facet_wrap(~ttype)
-p_cluster_v_events_ttype
-ggsave("plot/p_cluster_v_events_ttype.pdf", width = 10, height =10, units="in", dpi=300)
-
-p_drivers_cluster_v_events_ttype <- res_w_drivers %>% 
-  dplyr::group_by(ttype, sample_id) %>% 
-  dplyr::mutate(n_events=n(), n_clusters=length(unique(clock_mean))) %>% 
-  dplyr::select(sample_id, n_events, n_clusters) %>% 
-  dplyr::distinct() %>% 
-  ggplot(mapping = aes(x=n_events, y=n_clusters)) +
-  geom_point() +
-  theme_bw() +
-  facet_wrap(~ttype) +
-  ggtitle("Drivers only")
-p_drivers_cluster_v_events_ttype
-ggsave("plot/p_drivers_cluster_v_events_ttype.pdf", width = 10, height =10, units="in", dpi=300)
-
-p_tau_dist_driver_events_ttype <- res_w_drivers %>% 
-  #dplyr::filter(ttype == tumour_type) %>% 
-  ggplot2::ggplot(mapping = aes(x=type, y=clock_mean)) +
-  geom_violin() +
-  theme_bw() +
-  facet_wrap(~ttype) +
-  coord_flip()
-p_tau_dist_driver_events_ttype
-ggsave("plot/p_tau_dist_driver_events_ttype.pdf", width = 10, height =10, units="in", dpi=300)
-
-res_w_drivers %>% 
-  #dplyr::filter(ttype == tumour_type) %>% 
-  ggplot2::ggplot(mapping = aes(x=type, y=clock_mean)) +
-  geom_violin() +
-  theme_bw() +
-  facet_wrap(~ttype) +
-  coord_flip()
-
-res_w_drivers %>% 
-  #dplyr::filter(ttype == tumour_type) %>% 
-  ggplot2::ggplot(mapping = aes(x=karyotype, y=clock_mean)) +
-  geom_violin() +
-  theme_bw() +
-  facet_wrap(~ttype)
-  
-
-# Filter drivers seen in at least a certain number of samples
 unique(res_w_drivers$ttype)
 
-tumour_type = "BOCA"
-
+scores_df_all = dplyr::tibble()
 for (tumour_type in unique(res_w_drivers$ttype)) {
   print(tumour_type)
   frequent_drivers <- res_w_drivers %>% 
@@ -187,6 +138,8 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
       mutate(driver_in_pair = gene %in% frequent_drivers) %>%
       filter(driver_in_pair) %>%
       ungroup()
+    
+    max_samples = length(unique(res_processed$sample_id))
     
     # Initialize results as a list for better performance
     results <- vector("list", nrow(driver_pairs))
@@ -230,8 +183,10 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
         # Store result
         return(tibble(first_driver = pair$first_driver, second_driver = pair$second_driver, score = score, n_samples=n_samples, p.value = p_value))
       }
-    }) %>% do.call("bind_rows", .)
+    }) %>% do.call("bind_rows", .) %>% 
+      dplyr::mutate(ttype = tumour_type, max_samples=max_samples)
     
+    scores_df_all <- dplyr::bind_rows(scores_df_all, scores_df)
     
     if (nrow(scores_df) > 0) {
       scores_df = scores_df %>% 
@@ -239,18 +194,18 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
         na.omit()
       
       if (nrow(scores_df) > 0) {
-        mat = scores_df %>% 
-          dplyr::filter(p.value <= .05) %>% 
-          na.omit() %>% 
-          ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
-          geom_tile() +
-          geom_text(aes(label=n_samples)) +
-          scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
-          theme_bw() +
-          labs(x = "Driver 1", y = 'Driver 2') +
-          ggtitle(tumour_type)
-        
-        ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = mat)
+        # mat = scores_df %>% 
+        #   dplyr::filter(p.value <= .05) %>% 
+        #   na.omit() %>% 
+        #   ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
+        #   geom_tile() +
+        #   geom_text(aes(label=n_samples)) +
+        #   scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+        #   theme_bw() +
+        #   labs(x = "Driver 1", y = 'Driver 2') +
+        #   ggtitle(tumour_type)
+        # 
+        # ggsave(paste0("plot/matrices/", tumour_type, ".png"), width = 10, height =10, units="in", dpi=300, plot = mat)
         
         scores_df <- dplyr::bind_rows(
           scores_df,
@@ -259,7 +214,7 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
         
         scatterp = scores_df %>% 
           dplyr::filter(p.value <= .05) %>% 
-          na.omit() %>% 
+          #na.omit() %>% 
           dplyr::mutate() %>% 
           ggplot(mapping = aes(x = score, y=first_driver, fill=score, size=n_samples, col=score, label=second_driver)) +
           geom_point() +
@@ -272,9 +227,72 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
           labs(x = "Score", y="Driver", fill="Score", size="N samples", col="Score") +
 	        ggtitle(tumour_type)
 
+        saveRDS(scatterp, paste0("plot/scatters/", tumour_type, ".rds"))
   	    ggsave(paste0("plot/scatters/", tumour_type, ".png"), width = 5, height =5, units="in", dpi=300, plot = scatterp)
   	    
       }
     }
   }
 }
+
+TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1")
+Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS")
+genes_of_interest <- c(TSGs, Oncogenes)
+
+p = scores_df_all %>% 
+  dplyr::mutate(class = ifelse(second_driver %in% Oncogenes, "Oncogene", "TSG")) %>% 
+  dplyr::mutate(fraction = n_samples / max_samples) %>% 
+  dplyr::filter(p.value <= .05) %>% 
+  #dplyr::mutate() %>% 
+  ggplot(mapping = aes(x = score, y=first_driver, size=fraction, col=class, label=second_driver)) +
+  geom_point() +
+  theme_bw() +
+  ggrepel::geom_label_repel(col="black", size=4, fill=alpha('white', .1), min.segment.length = 0, box.padding = .5) +
+  lims(x = c(-1,1)) +
+  #scale_color_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+  #scale_fill_gradient2(low = "#998ec3", high = "#f1a340", mid = "white", midpoint = 0) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(x = "Score", y="Driver", fill="Score", size="Sample fraction", col="") +
+  facet_grid(ttype~., scales = "free", space="free") +
+  scale_color_manual(values = list("TSG" = alpha("#006663", .7), "Oncogene"=alpha("#b4662a", .7)))
+p
+ggsave(filename = "plot/scatters/gene_level_events.pdf", width = 8, height = 10, units = 'in', plot = p)
+saveRDS(p, "plot/scatters/gene_level_events.rds")
+
+# scores_df_all %>% 
+#   dplyr::mutate(fraction = n_samples / max_samples) %>% 
+#   #dplyr::filter(fraction >= .1) %>% 
+#   dplyr::mutate(score = abs(score)) %>% 
+#   dplyr::mutate(class = ifelse(p.value >= .05, "Not significant", "Significant")) %>% 
+#   ggplot(mapping = aes(x=score, fill = class)) +
+#   geom_histogram()
+
+p <- scores_df_all %>% 
+  dplyr::mutate(fraction = n_samples / max_samples) %>% 
+  #dplyr::filter(fraction >= .1) %>% 
+  #dplyr::mutate(score = abs(score)) %>% 
+  dplyr::mutate(class = ifelse(p.value >= .05, " ", ttype)) %>% 
+  dplyr::mutate(lab = if_else(p.value <= .05, paste0(first_driver, "-", second_driver), "")) %>% 
+  ggplot(mapping = aes(x=score, y = -log10(p.value), col=class, label=lab)) +
+  geom_vline(xintercept = c(.1, -.1), linetype="dashed") +
+  geom_hline(yintercept = -log10(.05), linetype="dashed") +
+  ggrepel::geom_label_repel(col="black", size=4, fill=alpha('white', .99), min.segment.length = 0, box.padding = .5) +
+  geom_point() +
+  theme_bw() +
+  #scale_color_manual(values = list("Not signif."= "grey70", "Signif."="indianred")) +
+  labs(x = "Score", y=bquote(-log[10] ~ pvalue), col="") +
+  scale_color_manual(
+    values = list(
+     " " = "gray90",
+     "BOCA" = "red",
+     "BRCA" = "orange",
+     "ESAD" = "yellow",
+     "MELA" = "green",
+     "PACA" = "blue",
+     "PRAD" = "purple"
+    )
+  )
+p  
+
+ggsave(filename = "plot/volcano_plot_scores.pdf", width = 8, height = 8, units = 'in', plot = p)
+saveRDS(p, "plot/volcano_plot_scores.rds")
