@@ -186,7 +186,11 @@ for (t in res_processed$ttype %>% unique()){
 
 #cores_df
 
-all_scores %>% 
+all_scores %>% rowwise() %>% 
+  mutate(
+  first_driver = paste0(strsplit(strsplit(first_driver, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(first_driver, ':')[[1]][2],'_')[[1]][1]),
+  second_driver = paste0(strsplit(strsplit(second_driver, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(second_driver, ':')[[1]][2],'_')[[1]][1])
+  ) %>%
   dplyr::filter(p.value <= .1) %>% 
   na.omit() %>% 
   ggplot(mapping = aes(x=first_driver, y=second_driver, fill=score)) +
@@ -197,7 +201,7 @@ all_scores %>%
   labs(x = "CNA 1", y = 'CNA 2') +
   facet_wrap(~type, scales = 'free')+
   theme(
-    axis.text.x = element_text(angle= 45, hjust=1)
+    #axis.text.x = element_text(angle= 45, hjust=1)
   )
   #ggtitle(tumour_type)
 

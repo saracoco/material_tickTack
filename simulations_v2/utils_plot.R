@@ -286,14 +286,21 @@ add_drivers_to_segment_plot = function(x, drivers_list, base_plot)
 
 merge_timing_and_segments <- function( x, K, colour_by = "karyotype", split_contiguous_segments = TRUE, chromosomes = paste0('chr', c(1:22)), max_Y_height = 6, cn = 'absolute', highlight = x$most_prevalent_karyotype, highlight_QC = FALSE) {
   
+  #genome_len = CNAqc:::get_reference('hg19') %>% 
+  plot_CNA <- plot_segments_h(x) 
+  #cnaqc_x = CNAqc::init(mutations = x$mutations, cna = x$cna, purity = x$metadata$purity, ref = 'hg19')
+  #CNAqc::plot_segments(cnaqc_x)
+                             
   data_plot <- plot_segments_tick_tack_data(x, K = K )+
-    ggplot2::theme(axis.title.x = element_blank())
+    ggplot2::theme(axis.title.x = element_blank()) 
   
   timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) 
   # segment_plot <- plot_segments_h(x, chromosomes, max_Y_height, cn, highlight, highlight_QC) +
   #   ggplot2::theme(axis.title.x = element_blank())  # Keep chromosome labels only on this plot
 
-  combined_plot <- data_plot / timing_plot + plot_layout(ncol = 1, heights = c(1, 1,1))
+  #combined_plot <- plot_CNA / data_plot / timing_plot + plot_layout(ncol = 1, heights = c(1, 1,1))
+  combined_plot = ggpubr::ggarrange(
+    plot_CNA, data_plot,timing_plot, ncol=1, align = 'hv',heights = c(1,1,1), common.legend = T, legend = 'bottom')
   
   return(combined_plot)
 }
@@ -345,7 +352,9 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
     ' accepted segments'
   )
   
-  p <- ggplot2::ggplot() +
+  p <- 
+    #ggplot2::ggplot() +
+    CNAqc:::blank_genome('hg19')+
     ggplot2::geom_segment(
       data = summarized_results,
       ggplot2::aes(
@@ -367,16 +376,16 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
       alpha = 0.5
     ) +
     ggplot2::scale_fill_viridis_d(option = "cividis")  +  
-    ggplot2::scale_x_continuous(
-      breaks = reference_genome$to,
-      labels = gsub("chr", "", reference_genome$chr)
-    ) +
-    ggplot2::theme_bw() +
+    # ggplot2::scale_x_continuous(
+    #   breaks = reference_genome$to,
+    #   labels = gsub("chr", "", reference_genome$chr)
+    # ) +
+    #ggplot2::theme_bw() +
     ggplot2::theme(
       legend.position = "bottom",
       axis.text.x = ggplot2::element_text(angle = 0)
     ) +
-    ggplot2::lims(y = c(0, 1)) +
+    #ggplot2::lims(y = c(0, 1)) +
     ggplot2::labs(
       x = "Chromosome",
       y = bquote("Pseudotime"~tau),
@@ -444,7 +453,8 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
   
   six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
   
-  ggplot2::ggplot() +
+  #ggplot2::ggplot() +
+    CNAqc:::blank_genome(ref='hg19')+
     ggplot2::geom_point(
       data = matched_mutations, 
       ggplot2::aes(
@@ -455,20 +465,20 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
       alpha = 0.5,
       size=0.1
     ) +
-    ggplot2::scale_fill_viridis_d(option = "cividis")  +  
+    #ggplot2::scale_fill_viridis_d(option = "cividis")  +  
     ggplot2::scale_color_manual(values = k_colors, name = "CN") +  
     ggplot2::guides(
       color = ggplot2::guide_legend(override.aes = list(size = 4))) +
-    ggplot2::scale_x_continuous(
-      breaks = reference_genome$to,
-      labels = gsub("chr", "", reference_genome$chr)
-    ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      legend.position = "top",
-      axis.text.x = ggplot2::element_text(angle = 0)
-    ) +
-    ggplot2::lims(y = c(0, 1)) +
+    # ggplot2::scale_x_continuous(
+    #   breaks = reference_genome$to,
+    #   labels = gsub("chr", "", reference_genome$chr)
+    # ) +
+    #ggplot2::theme_bw() +
+    # ggplot2::theme(
+    #   legend.position = "bottom",
+    #   axis.text.x = ggplot2::element_text(angle = 0)
+    # ) +
+    #ggplot2::lims(y = c(0, 1)) +
     ggplot2::labs(
       x = "Chromosome",
       y = bquote("Variant Allele Frequency (VAF)") 
@@ -480,4 +490,328 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
 
 
 
+plot_segments_h = function(x,
+                           chromosomes = paste0('chr', c(1:22)),
+                           max_Y_height = 6,
+                           cn = 'absolute',
+                           highlight = x$most_prevalent_karyotype,
+                           highlight_QC = FALSE,
+                           ...)
+{
+  
+  
+  # Segments
+  
+  segments_original = x$cna %>%
+    dplyr::filter(chr %in% chromosomes)  %>%
+    dplyr::mutate(
+      total = Major + minor,
+      karyotype = paste0(Major, ':', minor)
+    )
+  
+  segments_original = CNAqc:::relative_to_absolute_coordinates(x, segments_original)
+  
+  # 
+  # results <- x$results_timing
+  # reference_genome <- get_reference (x$reference_genome)
+  # vfrom = reference_genome$from
+  # names(vfrom) = reference_genome$chr
+  # 
+  # segments <- results$data$accepted_cna
+  # segments$from = lapply(segments$segment_name, function(s) {unlist(strsplit(s, "_"))[2]}) %>% unlist() %>% as.numeric()
+  # segments$to = lapply(segments$segment_name, function(s) {unlist(strsplit(s, "_"))[3]}) %>% unlist() %>% as.numeric()
+  # 
+  # absolute_segments <- segments %>%
+  #   dplyr::mutate(from = .data$from + vfrom[.data$chr],
+  #                 to = .data$to + vfrom[.data$chr])
+  # 
+  # summarized_results <- results$draws_and_summary[[K]]$summarized_results %>%
+  #   dplyr::mutate(from = absolute_segments[.data$segment_id,]$from) %>%
+  #   dplyr::mutate(to = absolute_segments[.data$segment_id,]$to) %>%
+  #   dplyr::mutate(tau_mean = ifelse(.data$clock_mean  < 1, .data$clock_mean , 1)) %>%
+  #   dplyr::mutate(tau_high = ifelse(.data$clock_high < 1, .data$clock_high, 1)) %>%
+  #   dplyr::mutate(tau_low = .data$clock_low)
+  # 
+  # segments_filter_total = data.frame()
+  # for (segment_idx in 1:nrow(summarized_results)) {
+  #   segment <- summarized_results[segment_idx, ]
+  #   print(segment$chr)
+  #   segments_filter <- segments_original %>%
+  #     dplyr::filter(.data$chr == segment$chr, .data$from >= segment$from, .data$to <= segment$to) %>%
+  #   print(nrow(segments_filter))
+  #   # if (nrow(segment_mutations)> 40){
+  #   segments_filter_total <- bind_rows(segments_filter_total, segments_filter)
+  #   # }
+  # }
+  # 
+  
+  # df <- segments_filter_total %>%
+  #   mutate(chr_num = as.numeric(str_extract(chr, "\\d+")))
+  
+  # Find chr with max and min numeric values
+  # chr_max <- df %>% filter(chr_num == max(chr_num)) %>% pull(chr_num) %>% unique()
+  # chr_min <- df %>% filter(chr_num == min(chr_num)) %>% pull(chr_num) %>% unique()  
+  # 
+  # chromosomes = paste0('chr', c(chr_min:chr_max))
+    
+  # Standard plot -- baseline genome reference
+  base_plot = blank_genome(chromosomes = chromosomes,
+                           ref = x$reference_genome)
+  segments_original = segments_original %>%
+    dplyr::filter(chr %in% chromosomes)  %>%
+    dplyr::mutate(
+      total = Major + minor,
+      karyotype = paste0(Major, ':', minor)
+    )
+
+
+  segments <- segments_original
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  # Shadow for highligthing
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  if(highlight_QC & !is.null(x$peaks_analysis)) {
+    base_plot = CNAqc:::add_shadow_to_plot_QC(segments, base_plot)
+  } else {
+    base_plot = CNAqc:::add_shadow_to_plot(segments, base_plot, highlight)
+  }
+  
+  
+  
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  # Draw Segments
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  base_plot = add_segments_to_plot(
+    segments = segments %>% dplyr::filter(total <= max_Y_height),
+    base_plot = base_plot,
+    cn = cn)
+  
+  # Extract subclonal segments
+  subclonal_segments = NULL
+  if (!is.null(x$cna_subclonal) & nrow(x$cna_subclonal) > 0)
+  {
+    subclonal_segments = x$cna_subclonal %>%
+      dplyr::filter(chr %in% chromosomes)
+    
+    if (nrow(subclonal_segments) > 0)
+    {
+      base_plot = add_subclonal_segments_to_plot(
+        segments = subclonal_segments %>%
+          relative_to_absolute_coordinates(x = x),
+        base_plot = base_plot,
+        cn = cn
+      )
+    }
+  }
+  
+  # Fragmentation ~ add some annotation to hihglight that
+  if (!is.null(x$arm_fragmentation))
+  {
+    fragmented = x$arm_fragmentation$table %>%
+      dplyr::filter(significant, chr %in% chromosomes) %>%
+      dplyr::mutate(label = paste0(chr, arm)) %>%
+      dplyr::pull(label)
+    
+    if (length(fragmented) > 0)
+    {
+      expanded_reference = CNAqc:::expand_reference_chr_to_arms(x) %>%
+        dplyr::filter(chr %in% fragmented)
+      
+      # base_plot = base_plot +
+      #   geom_rect(
+      #     data = expanded_reference,
+      #     aes(
+      #       xmin = from,
+      #       xmax = to,
+      #       ymin = -Inf,
+      #       ymax = Inf
+      #     ),
+      #     alpha = .2,
+      #     fill = NA,
+      #     color = 'purple4'
+      #   )
+      #
+      # base_plot +
+      #   geom_segment(
+      #     data = expanded_reference,
+      #     aes(
+      #       x = from,
+      #       xend = to,
+      #       y = -0.2,
+      #       yend = -0.2,
+      #     ),
+      #     color = 'purple4',
+      #     linetype = 1,
+      #     size = 2
+      #   )
+      
+      base_plot = base_plot +
+        ggplot2::geom_label(
+          data = expanded_reference,
+          ggplot2::aes(
+            x = from,
+            label = gsub(pattern = 'chr', replacement = '', chr),
+            y = -0.2
+          ),
+          fill = 'purple4',
+          color = 'white',
+          linewidth = 2,
+          label.padding = unit(0.05, 'cm')
+        )
+    }
+  }
+  
+  # Add extras
+  if (!is.null(x$arm_fragmentation))
+    capt_label = paste0(
+      capt_label,
+      '; ',
+      x$arm_fragmentation$table %>%
+        dplyr::filter(significant, chr %in% chromosomes) %>%
+        length,
+      ' fragmented arms'
+    )
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  # Breakpoints annotations
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  # base_plot = CNAqc:::add_breakpoints_to_plot(segments, base_plot, max_Y_height, circular = FALSE)
+  
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  # Drivers annotations
+  # =-=-=-=-=-=-=-=-=-=-=-=-
+  drivers_list = get_drivers(fit, chromosomes = chromosomes)
+  # if(!circular)
+  base_plot = add_drivers_to_segment_plot(x, 
+                                          drivers_list = drivers_list, 
+                                          base_plot)
+  
+  
+  
+  return(base_plot)
+}
+
+
+blank_genome = function(ref = "GRCh38", chromosomes = paste0('chr', c(1:22, 'X', 'Y')), label_chr = -0.5, cex = 1){
+  reference_coordinates = get_reference(ref) %>%
+    filter(chr %in% chromosomes)
+  
+  low = min(reference_coordinates$from)
+  upp = max(reference_coordinates$to)
+  
+  
+  #change the solid and dashed lines for better separating chromosomes.
+  p1 = ggplot2::ggplot(reference_coordinates) +
+    CNAqc:::my_ggplot_theme(cex = cex) +
+    ggplot2::geom_segment(
+      ggplot2::aes(
+        x = centromerStart,
+        xend = centromerEnd,
+        y = 0,
+        yend = Inf
+      ),
+      size = .1,
+      color = 'black',
+      linetype = 8
+    )
+  
+  p1 = p1 + ggplot2::geom_rect(
+    data = reference_coordinates,
+    ggplot2::aes(
+      xmin = from,
+      xmax = from,
+      ymin = 0,
+      ymax = Inf
+    ),
+    alpha = 1,
+    colour = 'grey',
+  )
+  
+  p1 = p1 +
+    ggplot2::geom_hline(yintercept = 0,
+                        size = 1,
+                        colour = 'gainsboro') +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      size = .3,
+      colour = 'black',
+      linetype = 'dashed'
+    ) +
+    ggplot2::labs(x = "Chromosome",
+                  y = "Major/ minor allele") +
+    ggpubr::rotate_y_text() +
+    # ggpubr::rotate_x_text() +
+    # xlim(low, upp) +
+    
+    #set the chr names in the centromer positions.
+    ggplot2::scale_x_continuous(
+      breaks = c(0, reference_coordinates$centromerStart, upp),
+      labels = c("", gsub(pattern = 'chr', replacement = '', reference_coordinates$chr), "")
+    )
+  
+  return(p1)
+}
+
+
+add_segments_to_plot = function(segments, base_plot, cn)
+{
+  if (cn == 'absolute')
+  {
+    # Add one Major and minor lines, one on top of the other, red and blu
+    M_seg = segments %>% dplyr::select(from, to, Major) %>% dplyr::rename(value = Major)
+    m_seg = segments %>% dplyr::select(from, to, minor) %>% dplyr::rename(value = minor)
+    
+    base_plot = base_plot +
+      ggplot2::geom_segment(
+        data = M_seg %>% dplyr::mutate(Allele = "Major allele (clonal)"),
+        ggplot2::aes(
+          x = from,
+          xend = to,
+          y = value,
+          yend = value,
+          colour = Allele
+        ),
+        size = 1.5
+      ) +
+      ggplot2::geom_segment(
+        data = m_seg %>% dplyr::mutate(Allele = "minor allele (clonal)"),
+        ggplot2::aes(
+          x = from,
+          xend = to,
+          y = value - 0.1,
+          yend = value - 0.1,
+          colour = Allele
+        ),
+        size = 1
+      ) +
+      ggplot2::scale_color_manual(values = c(`Major allele (clonal)` = 'red', `minor allele (clonal)` = 'steelblue')) +
+      ggplot2::guides(color = ggplot2::guide_legend(''))
+    
+    # Some layout
+    base_plot = base_plot +
+      ggplot2::theme(
+        legend.position = "bottom",
+        legend.justification = "right",
+        legend.margin = ggplot2::margin(0, 0, 0, 0)
+      ) +
+      ggplot2::labs(y = "Absolute allele counts")
+    
+  }
+  
+  if (cn == 'total')
+  {
+    base_plot = base_plot +
+      ggplot2::geom_segment(
+        data = segments %>% dplyr::select(from, to, total) %>% dplyr::mutate(Allele = "Segment ploidy"),
+        ggplot2::aes(
+          x = from,
+          xend = to,
+          y = total,
+          yend = total
+        ),
+        size = 1.5,
+        colour = 'black'
+      )
+  }
+  
+  return(base_plot)
+}
 
