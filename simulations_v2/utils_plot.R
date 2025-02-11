@@ -1,16 +1,15 @@
-
 ALPHA = .8
 # color = c(
 #   'AmplificationTimeR' = alpha('forestgreen', alpha = ALPHA),
 #   'MutationTimeR' = alpha('steelblue', alpha = ALPHA),
-#   'tickTack base' = alpha('orange', alpha = ALPHA),
-#   'tickTack' = alpha('firebrick3', alpha = ALPHA)
+#   'tickTack' = alpha('orange', alpha = ALPHA),
+#   'tickTackH' = alpha('firebrick3', alpha = ALPHA)
 # )
 
 color = c(
   'AmplificationTimeR' = alpha('#868686', alpha = ALPHA),
   'MutationTimeR' = alpha('#EFC000', alpha = ALPHA),
-  'tickTack base' = alpha('#7AA6DC', alpha = ALPHA),
+  'indep_tickTack' = alpha('#7AA6DC', alpha = ALPHA),
   'tickTack' = alpha('#CD534C', alpha = ALPHA)
 )
 
@@ -18,7 +17,7 @@ convert_name = function(n) {
   if (grepl("AmpTime", n)) return("AmplificationTimeR")
   if (grepl("MutTimeR", n)) return("MutationTimeR")
   if (grepl("tickTack_h", n)) return("tickTack")
-  if (grepl("tickTack", n)) return("tickTack base")
+  if (grepl("tickTack", n)) return("indep_tickTack")
   stop("error name not recognized")
 }
 
@@ -30,7 +29,7 @@ plot_over_purity = function(all_res) {
     #dplyr::summarise(metric = sqrt(mean(value - true_tau)**2)) %>% # RMSE
     dplyr::summarise(metric = mean(abs(value - true_tau) / true_tau), .groups = "drop") # PERCENT ERROR
   r$name = lapply(r$name, convert_name) %>% unlist()
-
+  
   r %>%
     ggplot(mapping = aes(x = as.factor(purity), y=metric, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
@@ -47,7 +46,7 @@ plot_over_coverage = function(all_res) {
     #dplyr::summarise(metric = sqrt(mean(value - true_tau)**2)) %>% # RMSE
     dplyr::summarise(metric = mean(abs(value - true_tau) / true_tau), .groups = "drop") # PERCENT ERROR
   r$name = lapply(r$name, convert_name) %>% unlist()
-
+  
   r %>%
     ggplot(mapping = aes(x = as.factor(coverage), y=metric, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
@@ -64,9 +63,8 @@ plot_over_nmutations = function(all_res) {
     #dplyr::summarise(metric = sqrt(mean(value - true_tau)**2)) %>% # RMSE
     dplyr::summarise(metric = mean(abs(value - true_tau) / true_tau), .groups = "drop") # PERCENT ERROR
   r$name = lapply(r$name, convert_name) %>% unlist()
-
+  
   r %>%
-    dplyr::mutate(name = factor(name, levels = names(color))) %>% 
     ggplot(mapping = aes(x = as.factor(n_mutations), y=metric, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
@@ -82,9 +80,8 @@ plot_nclocks_v_nevents = function(all_res) {
     #dplyr::summarise(metric = sqrt(mean(value - true_tau)**2)) %>% # RMSE
     dplyr::summarise(metric = mean(abs(value - true_tau) / true_tau), .groups = "drop") # PERCENT ERROR
   r$name = lapply(r$name, convert_name) %>% unlist()
-
+  
   r %>%
-    dplyr::mutate(name = factor(name, levels = names(color))) %>% 
     ggplot(mapping = aes(x = as.factor(n_events), y=metric, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
@@ -96,11 +93,10 @@ plot_nclocks_v_nevents = function(all_res) {
 
 # Rand index plot ####
 plot_rand_index = function(res_clust) {
-  colnames(res_clust)[7:10] = c("AmplificationTimeR", "MutationTimeR", "tickTack base", "tickTack")
+  colnames(res_clust)[7:10] = c("AmplificationTimeR", "MutationTimeR", "indep_tickTack", "tickTack")
   res_clust %>%
-    dplyr::select(n_clocks, n_events, AmplificationTimeR, MutationTimeR, `tickTack base`, tickTack) %>%
-    tidyr::pivot_longer(c(AmplificationTimeR, MutationTimeR,  `tickTack base`, tickTack)) %>%
-    dplyr::mutate(name = factor(name, levels=names(color))) %>% 
+    dplyr::select(n_clocks, n_events, AmplificationTimeR, MutationTimeR, indep_tickTack, tickTack) %>%
+    tidyr::pivot_longer(c(AmplificationTimeR, MutationTimeR, indep_tickTack, tickTack)) %>%
     ggplot(mapping = aes(x = name, y=value, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
     ggh4x::facet_nested("N segments"+n_events~"N tau"+n_clocks) +
@@ -133,7 +129,7 @@ get_reference = function(ref)
 add_breakpoints_to_plot = function(segments, base_plot, max_Y_height, circular)
 {
   off_plot = segments %>% dplyr::filter(total > max_Y_height)
-    if (nrow(off_plot) > 0)
+  if (nrow(off_plot) > 0)
   {
     base_plot = base_plot +
       ggplot2::geom_hline(
@@ -274,7 +270,7 @@ add_drivers_to_segment_plot = function(x, drivers_list, base_plot)
         x = from,
         y = y,
         label = driver_label,
-        ),
+      ),
       ylim = c(L$y.range[2] * .9, NA),
       size = 2,
       nudge_y = 0,
@@ -290,20 +286,25 @@ add_drivers_to_segment_plot = function(x, drivers_list, base_plot)
 merge_timing_and_segments <- function( x, K, colour_by = "karyotype", split_contiguous_segments = TRUE, chromosomes = paste0('chr', c(1:22)), max_Y_height = 6, cn = 'absolute', highlight = x$most_prevalent_karyotype, highlight_QC = FALSE) {
   
   #genome_len = CNAqc:::get_reference('hg19') %>% 
-  plot_CNA <- plot_segments_h(x) 
+  plot_CNA <- plot_segments_h(x) + 
+    theme(legend.position='right')+
+    ggplot2::theme(axis.title.x = element_blank())
   #cnaqc_x = CNAqc::init(mutations = x$mutations, cna = x$cna, purity = x$metadata$purity, ref = 'hg19')
   #CNAqc::plot_segments(cnaqc_x)
-                             
+  
   data_plot <- plot_segments_tick_tack_data(x, K = K )+
+    theme(legend.position='right') +
     ggplot2::theme(axis.title.x = element_blank()) 
   
-  timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) 
+  timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) +
+    theme(legend.position='right')
+  
   # segment_plot <- plot_segments_h(x, chromosomes, max_Y_height, cn, highlight, highlight_QC) +
   #   ggplot2::theme(axis.title.x = element_blank())  # Keep chromosome labels only on this plot
-
+  
   #combined_plot <- plot_CNA / data_plot / timing_plot + plot_layout(ncol = 1, heights = c(1, 1,1))
   combined_plot = ggpubr::ggarrange(
-    plot_CNA, data_plot,timing_plot, ncol=1, align = 'hv',heights = c(1,1,1), common.legend = T, legend = 'bottom')
+    plot_CNA, data_plot,timing_plot, ncol=1, align = 'hv',heights = c(1,1,1), common.legend = F) #, legend = 'bottom'
   
   return(combined_plot)
 }
@@ -340,7 +341,7 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
     '2:2' = 'firebrick3'  
   )
   
-  six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
+  # six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
   summarized_results <- summarized_results %>%
     dplyr::mutate(tau_cluster = factor(
       .data[[colour_by]], 
@@ -349,15 +350,17 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
     ))
   
   capt_label = paste0("Tumour type ", x$ttype,
-    " Ploidy ", x$ploidy, "; Purity  ", x$purity,
-    '; n = ', x$results_timing$data$input_data$N, ' accepted mutations in ',
-    x$results_timing$data$input_data$S,
-    ' accepted segments'
+                      " Ploidy ", x$ploidy, "; Purity  ", x$purity,
+                      '; n = ', x$results_timing$data$input_data$N, ' accepted mutations in ',
+                      x$results_timing$data$input_data$S,
+                      ' accepted segments'
   )
+  
+  my_palette <- c(  "#66a61e",  "#7570b3", "#e7298a", "#1b9e77", "#d95f02")
   
   p <- 
     #ggplot2::ggplot() +
-    CNAqc:::blank_genome('hg19')+
+    CNAqc:::blank_genome('hg19',chromosomes = paste0("chr", c(1:22)))+
     ggplot2::geom_segment(
       data = summarized_results,
       ggplot2::aes(
@@ -378,7 +381,9 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
       ),
       alpha = 0.5
     ) +
-    ggplot2::scale_fill_viridis_d(option = "cividis")  +  
+    ggplot2::scale_fill_manual(values = my_palette)+
+    # ggplot2::scale_colour_brewer(palette="BuPu", direction=-1)+
+    # ggplot2::scale_fill_viridis_d(direction=-1)  +   #option = "cividis"
     # ggplot2::scale_x_continuous(
     #   breaks = reference_genome$to,
     #   labels = gsub("chr", "", reference_genome$chr)
@@ -410,7 +415,7 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
   mutations <- x$mutations
   results <- x$results_timing
   reference_genome <- get_reference (x$reference_genome)
-
+  
   vfrom = reference_genome$from
   names(vfrom) = reference_genome$chr
   
@@ -445,7 +450,7 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
     accepted_mutations <- bind_rows(accepted_mutations, segment_mutations)
     # }
   }
-
+  
   matched_mutations <- accepted_mutations
   
   k_colors = list(
@@ -454,10 +459,10 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
     '2:2' = 'firebrick3'  
   )
   
-  six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
+  # six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
   
   #ggplot2::ggplot() +
-    CNAqc:::blank_genome(ref='hg19')+
+  CNAqc:::blank_genome(ref='hg19', chromosomes = paste0("chr", c(1:22)))+
     ggplot2::geom_point(
       data = matched_mutations, 
       ggplot2::aes(
@@ -556,7 +561,7 @@ plot_segments_h = function(x,
   # chr_min <- df %>% filter(chr_num == min(chr_num)) %>% pull(chr_num) %>% unique()  
   # 
   # chromosomes = paste0('chr', c(chr_min:chr_max))
-    
+  
   # Standard plot -- baseline genome reference
   base_plot = blank_genome(chromosomes = chromosomes,
                            ref = x$reference_genome)
@@ -566,8 +571,8 @@ plot_segments_h = function(x,
       total = Major + minor,
       karyotype = paste0(Major, ':', minor)
     )
-
-
+  
+  
   segments <- segments_original
   # =-=-=-=-=-=-=-=-=-=-=-=-
   # Shadow for highligthing
