@@ -1,4 +1,4 @@
-.libPaths(new="~/R/rstudio_v3/") 
+
 library(CNAqc)
 library(tickTack)
 library(dplyr)
@@ -7,7 +7,7 @@ library(fuzzyjoin)
 library(ggplot2)
 library(patchwork)
 library(data.table)
-library(tidyr)
+library(tidyverse)
 source("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/simulations_v2/utils_plot.R")
 
 

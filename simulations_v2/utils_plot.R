@@ -3,22 +3,22 @@ ALPHA = .8
 # color = c(
 #   'AmplificationTimeR' = alpha('forestgreen', alpha = ALPHA),
 #   'MutationTimeR' = alpha('steelblue', alpha = ALPHA),
-#   'tickTack' = alpha('orange', alpha = ALPHA),
-#   'tickTackH' = alpha('firebrick3', alpha = ALPHA)
+#   'tickTack base' = alpha('orange', alpha = ALPHA),
+#   'tickTack' = alpha('firebrick3', alpha = ALPHA)
 # )
 
 color = c(
   'AmplificationTimeR' = alpha('#868686', alpha = ALPHA),
   'MutationTimeR' = alpha('#EFC000', alpha = ALPHA),
-  'tickTack' = alpha('#7AA6DC', alpha = ALPHA),
-  'tickTackH' = alpha('#CD534C', alpha = ALPHA)
+  'tickTack base' = alpha('#7AA6DC', alpha = ALPHA),
+  'tickTack' = alpha('#CD534C', alpha = ALPHA)
 )
 
 convert_name = function(n) {
   if (grepl("AmpTime", n)) return("AmplificationTimeR")
   if (grepl("MutTimeR", n)) return("MutationTimeR")
-  if (grepl("tickTack_h", n)) return("tickTackH")
-  if (grepl("tickTack", n)) return("tickTack")
+  if (grepl("tickTack_h", n)) return("tickTack")
+  if (grepl("tickTack", n)) return("tickTack base")
   stop("error name not recognized")
 }
 
@@ -66,6 +66,7 @@ plot_over_nmutations = function(all_res) {
   r$name = lapply(r$name, convert_name) %>% unlist()
 
   r %>%
+    dplyr::mutate(name = factor(name, levels = names(color))) %>% 
     ggplot(mapping = aes(x = as.factor(n_mutations), y=metric, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
@@ -83,6 +84,7 @@ plot_nclocks_v_nevents = function(all_res) {
   r$name = lapply(r$name, convert_name) %>% unlist()
 
   r %>%
+    dplyr::mutate(name = factor(name, levels = names(color))) %>% 
     ggplot(mapping = aes(x = as.factor(n_events), y=metric, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
@@ -94,10 +96,11 @@ plot_nclocks_v_nevents = function(all_res) {
 
 # Rand index plot ####
 plot_rand_index = function(res_clust) {
-  colnames(res_clust)[7:10] = c("AmplificationTimeR", "MutationTimeR", "tickTack", "tickTackH")
+  colnames(res_clust)[7:10] = c("AmplificationTimeR", "MutationTimeR", "tickTack base", "tickTack")
   res_clust %>%
-    dplyr::select(n_clocks, n_events, AmplificationTimeR, MutationTimeR, tickTack, tickTackH) %>%
-    tidyr::pivot_longer(c(AmplificationTimeR, MutationTimeR, tickTack, tickTackH)) %>%
+    dplyr::select(n_clocks, n_events, AmplificationTimeR, MutationTimeR, `tickTack base`, tickTack) %>%
+    tidyr::pivot_longer(c(AmplificationTimeR, MutationTimeR,  `tickTack base`, tickTack)) %>%
+    dplyr::mutate(name = factor(name, levels=names(color))) %>% 
     ggplot(mapping = aes(x = name, y=value, fill=name)) +
     geom_boxplot(lwd=.3, outlier.size = .5) +
     ggh4x::facet_nested("N segments"+n_events~"N tau"+n_clocks) +

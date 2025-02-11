@@ -16,12 +16,13 @@ rand_index_plot = plot_rand_index(res_clust)
 
 design = "
 A
-B
+A
 B
 C
-C"
+C
+"
 
-sim_plot = error_over_nmuts + error_over_clocks_and_muts + rand_index_plot +
+sim_plot = rand_index_plot + error_over_nmuts + error_over_clocks_and_muts + 
   plot_layout(design = design) +
   plot_annotation(tag_levels = "A") &
   theme(
