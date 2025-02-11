@@ -287,17 +287,20 @@ merge_timing_and_segments <- function( x, K, colour_by = "karyotype", split_cont
   
   #genome_len = CNAqc:::get_reference('hg19') %>% 
   plot_CNA <- plot_segments_h(x) + 
-    theme(legend.position='right')+
-    ggplot2::theme(axis.title.x = element_blank())
+    theme(legend.position='bottom')+
+    ggplot2::theme(axis.title.x = element_blank())+
+    ylab('Allele count')
   #cnaqc_x = CNAqc::init(mutations = x$mutations, cna = x$cna, purity = x$metadata$purity, ref = 'hg19')
   #CNAqc::plot_segments(cnaqc_x)
   
   data_plot <- plot_segments_tick_tack_data(x, K = K )+
-    theme(legend.position='right') +
-    ggplot2::theme(axis.title.x = element_blank()) 
+    theme(legend.position='bottom') +
+    ggplot2::theme(axis.title.x = element_blank()) +
+    ylab('VAF')
   
   timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) +
-    theme(legend.position='right')
+    theme(legend.position='bottom')+
+    ylab(bquote(tau))
   
   # segment_plot <- plot_segments_h(x, chromosomes, max_Y_height, cn, highlight, highlight_QC) +
   #   ggplot2::theme(axis.title.x = element_blank())  # Keep chromosome labels only on this plot
@@ -398,7 +401,8 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
       x = "Chromosome",
       y = bquote("Pseudotime"~tau),
       fill = "Cluster"  
-    ) + ggplot2::labs(caption = capt_label)
+    ) + ggplot2::labs(caption = capt_label)+
+    scale_y_continuous(breaks = seq(0, 1, by = .5))
   
   drivers_list = get_drivers(x, chromosomes = paste0('chr', c(1:22)))
   base_plot = add_drivers_to_segment_plot(x, 
@@ -490,7 +494,8 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
     ggplot2::labs(
       x = "Chromosome",
       y = bquote("Variant Allele Frequency (VAF)") 
-    ) 
+    ) +
+    scale_y_continuous(breaks = seq(0, 1, by = .5))
   
   
   
