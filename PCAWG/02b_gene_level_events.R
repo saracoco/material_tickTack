@@ -273,7 +273,7 @@ p <- scores_df_all %>%
   #dplyr::mutate(score = abs(score)) %>% 
   dplyr::mutate(class = ifelse(p.value >= .05, " ", ttype)) %>% 
   dplyr::mutate(lab = if_else(p.value <= .05, paste0(first_driver, "-", second_driver), "")) %>% 
-  ggplot(mapping = aes(x=score, y = -log10(p.value), col=class, label=lab)) +
+  ggplot(mapping = aes(x=score, y = -log10(p.value), size=-log10(p.value), col=class, label=lab)) +
   geom_vline(xintercept = c(.1, -.1), linetype="dashed") +
   geom_hline(yintercept = -log10(.05), linetype="dashed") +
   ggrepel::geom_label_repel(col="black", size=4, fill=alpha('white', .99), min.segment.length = 0, box.padding = .5) +
@@ -284,12 +284,12 @@ p <- scores_df_all %>%
   scale_color_manual(
     values = list(
      " " = "gray90",
-     "BOCA" = "red",
-     "BRCA" = "orange",
-     "ESAD" = "yellow",
-     "MELA" = "green",
-     "PACA" = "blue",
-     "PRAD" = "purple"
+     "BOCA" = rgb(203/255, 204/255, 250/255, alpha = 1),
+     "BRCA" = rgb(246/255, 196/255, 205/255, alpha = 1),
+     "ESAD" = rgb(136/255, 181/255, 215/255, alpha = 1),
+     "MELA" = rgb(255/255, 255/255, 167/255, alpha = 1),
+     "PACA" = rgb(247/255, 216/255, 133/255, alpha = 1),
+     "PRAD" = '#9ec6b3ff'
     )
   )
 p  
