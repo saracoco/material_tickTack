@@ -28,9 +28,10 @@ RES <- lapply(IDs, function(id) {
   tryCatch({
     results = readRDS(paste0(results_path, id))
     fit = readRDS(paste0(fits_path, unlist(strsplit(id, ".rds")), "/fit.rds"))
+    tumour_name = (unique(fit$snvs$ttype) %>% na.omit())[1]
     ploidy = fit$ploidy
     ttype = strsplit(fit$snvs$project_code, "-")[[1]][1]
-    df = dplyr::tibble(sample_id=id, ttype=ttype, ploidy=ploidy)
+    df = dplyr::tibble(sample_id=id, ttype=ttype, ploidy=ploidy, tumour_name=tumour_name)
     return(dplyr::bind_cols(df, parse_summarized_results(results)))
   }, error = function(e) {
     # Error handling
@@ -43,6 +44,12 @@ RES <- lapply(IDs, function(id) {
 saveRDS(RES, "results/summary_all_samples.rds")
 RES = readRDS("results/summary_all_samples.rds")
 RES$ttype %>% unique()
+RES$tumour_name %>% unique()
+
+RES %>% 
+  dplyr::select(ttype, tumour_name) %>% 
+  dplyr::distinct() %>% 
+  print(n=100)
 
 # Add arm-level annotation
 

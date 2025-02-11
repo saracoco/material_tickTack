@@ -11,7 +11,7 @@ all_res %>%
   ggh4x::facet_nested("N clocks"+n_clocks~ "N events"+n_events) +
   theme_bw()
 
-ggsave("plot/scores_ri_dists.pdf", width = 10, height = 10, units = "in", dpi=600)
+#ggsave("plot/scores_ri_dists.pdf", width = 10, height = 10, units = "in", dpi=600)
 
 df_scores = lapply(seq(.01, .99, length = 20) , function(q) {
   all_res %>% 
@@ -27,14 +27,15 @@ df_scores = lapply(seq(.01, .99, length = 20) , function(q) {
     dplyr::mutate(q = q)
 }) %>% do.call("bind_rows", .)
 
-df_scores %>% 
+p1 = df_scores %>% 
   ggplot(mapping = aes(x=q, y=avg_rank, col=score)) +
   geom_point() +
   geom_line() +
   theme_bw() +
   labs(x = "Quantile q", y="Average rank") +
-  ggtitle("Cluster 1 to 5")
-
+  ggtitle("Cluster 1 to 5") +
+  labs(col = "Criterion")
+p1
 ggsave("plot/ranks_1_to_5.pdf", width = 10, height = 10, units = "in", dpi=600)
 
 
@@ -53,12 +54,22 @@ df_scores = lapply(seq(.01, .99, length = 20) , function(q) {
     dplyr::mutate(q = q)
 }) %>% do.call("bind_rows", .)
 
-df_scores %>% 
+p2 = df_scores %>% 
   ggplot(mapping = aes(x=q, y=avg_rank, col=score)) +
   geom_point() +
   geom_line() +
   theme_bw() +
   labs(x = "Quantile q", y="Average rank") +
-  ggtitle("Cluster 3 to 5")
-
+  ggtitle("Cluster 3 to 5") +
+  labs(col = "Criterion")
+p2
 ggsave("plot/ranks_3_to_5.pdf", width = 10, height = 10, units = "in", dpi=600)
+
+
+p12 = p1 + p2 +
+  plot_layout(ncol = 1, nrow = 2) +
+  plot_annotation(tag_levels = "A") &
+  theme(
+    plot.tag = element_text(face = "bold")
+  )
+ggsave("plot/model_selection_ranks.pdf", width = 10, height = 10, units = "in", dpi=600, plot=p12)
