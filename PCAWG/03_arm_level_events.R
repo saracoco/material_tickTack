@@ -290,7 +290,7 @@ for (tt in (all_scores$type %>% unique())){
 }
 
 # All types
-pdf(paste0("plot/circos_plot.pdf"), width = 8, height = 8)
+pdf(paste0("plot/circos_plot.pdf"), width = 12, height = 8)
 sectors <- c(all_scores$first_driver %>% unique(), all_scores$second_driver %>% unique()) %>% unique() %>% sort()
 values = lapply(sectors, function(c){
     if (grepl('p',c)){
