@@ -118,7 +118,7 @@ x_after_inference_PCAWG$ttype <- unique(fit$snvs$ttype)[2]
 x <- x_after_inference_PCAWG
 results<-x$results_timing
 
-K=3
+K=2
 # plot_segments_tick_tack(x)
 source("~/Documents/GitHub/material_tickTack/simulations_v2/utils_plot.R")
 example = merge_timing_and_segments(x, K=K)+
