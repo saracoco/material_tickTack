@@ -10,7 +10,6 @@ pE = readRDS("plot/scatters/gene_level_events.rds")
 
 des = "
 AABC
-AABC
 DDEE
 FFEE
 FFEE"
