@@ -153,6 +153,7 @@ for (t in res_processed$ttype %>% unique()){
       filter(n != 1) %>% 
       dplyr::select(sample_id, clock_rank, class) %>% 
       tidyr::pivot_wider(values_from = clock_rank, names_from = class)
+    sample_ids = paste(co_occurr_df$sample_id %>% unique(), collapse=' ')
     if (nrow(co_occurr_df)) {
       n_pre = sum(co_occurr_df[,pair$first_driver] < co_occurr_df[,pair$second_driver])
       n_coo = sum(co_occurr_df[,pair$first_driver] == co_occurr_df[,pair$second_driver])
@@ -178,7 +179,7 @@ for (t in res_processed$ttype %>% unique()){
       # Store result
       return(tibble(first_driver = pair$first_driver, 
                     second_driver = pair$second_driver, score = score, n_samples=n_samples, 
-                    p.value = t_test$p.value, type = t))
+                    p.value = t_test$p.value, type = t, samples = sample_ids))
     }
   }) %>% do.call("bind_rows", .)
   all_scores = rbind(all_scores,scores_df)
@@ -215,82 +216,142 @@ ggsave(paste0("plot/matrices/arm_events.png"), width = 10, height =10, units="in
 ########## Circus plot
 library(circlize)
 library(dplyr)
+library(dplyr)
+library(ggplot2)
+library(parallel)
+library(tibble)
+source("utils.R")
 all_scores = read.csv('data/arm_scores.csv') %>% filter(p.value < .1)
-# By ttype
-for (tt in (all_scores$type %>% unique())){
-  pdf(paste0("plot/circos_plot",tt,".pdf"), width = 8, height = 8)
-  all_scores_tt = all_scores %>% filter(type == tt) %>% filter(p.value < .1)
-  sectors <- c(all_scores_tt$first_driver %>% unique(), all_scores_tt$second_driver %>% unique()) %>% unique() %>% sort()
-  values = lapply(sectors, function(c){
-    if (grepl('p',c)){
-      chromosome = strsplit(c, 'p')[[1]][1]
-      arm='p'
-      len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerStart)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
-    }
-    if (grepl('q',c)){
-        chromosome = strsplit(c, 'q')[[1]][1]
-        arm='q'
-        len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerEnd))
-    }
-    if (grepl('whole',c)){
-      chromosome = strsplit(c, 'whole')[[1]][1]
-      arm='whole'
-      len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
-    }
-    data.frame('sector'= c,'value'=len)
-    #CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) 
-  }) #%>% Reduce(rbind)
-  values = Reduce(rbind,values)
-  
-  values$value_scaled <- values$value / sum(values$value)
-  df = values 
-  
-  df$start <- c(0, head(cumsum(df$value_scaled), -1))
-  df$end <- cumsum(df$value_scaled)
-  
-  # Initialize the circular layout with proportional widths
-  circos.initialize(factors = df$sector, xlim = df[, c("start", "end")],
-                    circos.par(cell.padding = c(0.02, 0, 0.02, 0)))
-  
-  # Create sector tracks with labels
-  circos.trackPlotRegion(factors = df$sector, ylim = c(0, 1), 
-                         panel.fun = function(x, y) {
-                           sector.name <- get.cell.meta.data("sector.index")
-                           xcenter <- mean(get.cell.meta.data("xlim"))
-                           circos.text(xcenter, 0.5, sector.name, facing = "inside", niceFacing = TRUE)
-                         },
-                         bg.border = rep("white", nrow(df)),
-                         bg.col = rep("gainsboro", nrow(df)))
-  for (i in 1:nrow(all_scores_tt)){
-    first = all_scores_tt$first_driver[i]
-    second = all_scores_tt$second_driver[i]
-    if (all_scores_tt$score[i] < 0){
-      transparent_violet <- rgb(148/255, 131/255, 204/255, alpha = 0.5)
-      circos.link(first, 
-                  c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
-                  second, 
-                  c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
-                  col = transparent_violet, border = transparent_violet#, directional = 1, arr.length = 0.4
-      )
-    }else{
-      transparent_orange <- rgb(255/255, 165/255, 0, alpha = 0.5)
-      circos.link(first, 
-                  c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
-                  second, 
-                  c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
-                  col = transparent_orange, border = transparent_orange#, directional = 1, arr.length = 0.4
-      )
-    }
+annotate_cna = read.csv('data/annotated_cnas.csv') %>% rowwise() %>%
+  mutate(class = paste0(strsplit(strsplit(class, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(class, ':')[[1]][2],'_')[[1]][1]))
+all_events = c(all_scores$first_driver %>% unique(), all_scores$second_driver %>% unique()) %>% unique() %>% sort()
+
+# Annotate the karyotypes
+karyo_annotations = lapply(all_events, function(e){
+  samples = c(all_scores %>% filter(first_driver == e) %>% pull(samples),
+              all_scores %>% filter(second_driver == e) %>% pull(samples))
+  samples = strsplit(samples, ' ') %>% unlist()
+  k_df = annotate_cna %>% filter(class == e, sample_id %in% samples) %>% group_by(karyotype) %>% summarise(n=n())
+  k_df$event = e
+  k_df
+})
+karyo_annotations = Reduce(rbind, karyo_annotations)
+
+# Annotate the events with drivers
+load("data/gene_coordinates_hg19.rda")
+drivers = read.csv('./IntOGen_2024/2024-06-18_IntOGen-Drivers/Compendium_Cancer_Genes.tsv', sep='\t') %>%
+  filter(CANCER_TYPE %in% c('LIHB','PANCREAS', 'PAAD', 'MEL', 'BRCA', 'COAD','COADREAD')) %>%
+  filter(SAMPLES > 25)
+gene_coordinates_hg19 = gene_coordinates_hg19 %>% filter(gene %in% drivers$SYMBOL)
+
+genes = lapply(all_events, function(c){
+  if (grepl('p',c)){
+    chromosome = strsplit(c, 'p')[[1]][1]
+    from_e = CNAqc:::get_reference('hg19') %>% 
+      filter(chr==paste0('chr',chromosome)) %>% pull(from)
+    to_e = CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% 
+      pull(centromerStart)
+    genes = gene_coordinates_hg19 %>% filter(chr==paste0('chr',chromosome), from >= 0, to <= (to_e-from_e)) 
+  }
+  if (grepl('q',c)){
+    chromosome = strsplit(c, 'q')[[1]][1]
+    from_0 = CNAqc:::get_reference('hg19') %>% 
+      filter(chr==paste0('chr',chromosome)) %>% pull(from)
     
-    }
-  
-  # Clear the Circos plot
-  circos.clear()
-  dev.off()
-}
+    from_e = CNAqc:::get_reference('hg19') %>% 
+      filter(chr==paste0('chr',chromosome)) %>% pull(centromerEnd)
+    to_e = CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% 
+      pull(to)
+    genes = gene_coordinates_hg19 %>% filter(chr==paste0('chr',chromosome), from >= from_e-from_0, to <= (to_e-from_0)) 
+  }
+  if (grepl('whole',c)){
+    chromosome = strsplit(c, 'whole')[[1]][1]
+    from_e = CNAqc:::get_reference('hg19') %>% 
+      filter(chr==paste0('chr',chromosome)) %>% pull(from)
+    to_e = CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% 
+      pull(to)
+    genes = gene_coordinates_hg19 %>% filter(chr==paste0('chr',chromosome), from >= from_e, to <= (to_e-from_e)) 
+  }
+  genes$arm = c
+  genes
+})
+genes = Reduce(rbind, genes)
+
+# By ttype
+# for (tt in (all_scores$type %>% unique())){
+#   pdf(paste0("plot/circos_plot",tt,".pdf"), width = 8, height = 8)
+#   all_scores_tt = all_scores %>% filter(type == tt) %>% filter(p.value < .1)
+#   sectors <- c(all_scores_tt$first_driver %>% unique(), all_scores_tt$second_driver %>% unique()) %>% unique() %>% sort()
+#   values = lapply(sectors, function(c){
+#     if (grepl('p',c)){
+#       chromosome = strsplit(c, 'p')[[1]][1]
+#       arm='p'
+#       len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerStart)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
+#     }
+#     if (grepl('q',c)){
+#         chromosome = strsplit(c, 'q')[[1]][1]
+#         arm='q'
+#         len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerEnd))
+#     }
+#     if (grepl('whole',c)){
+#       chromosome = strsplit(c, 'whole')[[1]][1]
+#       arm='whole'
+#       len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
+#     }
+#     data.frame('sector'= c,'value'=len)
+#     #CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) 
+#   }) #%>% Reduce(rbind)
+#   values = Reduce(rbind,values)
+#   
+#   values$value_scaled <- values$value / sum(values$value)
+#   df = values 
+#   
+#   df$start <- c(0, head(cumsum(df$value_scaled), -1))
+#   df$end <- cumsum(df$value_scaled)
+#   
+#   # Initialize the circular layout with proportional widths
+#   circos.initialize(factors = df$sector, xlim = df[, c("start", "end")],
+#                     circos.par(cell.padding = c(0.02, 0, 0.02, 0)))
+#   
+#   # Create sector tracks with labels
+#   circos.trackPlotRegion(factors = df$sector, ylim = c(0, 1), 
+#                          panel.fun = function(x, y) {
+#                            sector.name <- get.cell.meta.data("sector.index")
+#                            xcenter <- mean(get.cell.meta.data("xlim"))
+#                            circos.text(xcenter, 0.5, sector.name, facing = "inside", niceFacing = TRUE)
+#                          },
+#                          bg.border = rep("white", nrow(df)),
+#                          bg.col = rep("gainsboro", nrow(df)))
+#   for (i in 1:nrow(all_scores_tt)){
+#     first = all_scores_tt$first_driver[i]
+#     second = all_scores_tt$second_driver[i]
+#     if (all_scores_tt$score[i] < 0){
+#       transparent_violet <- rgb(148/255, 131/255, 204/255, alpha = 0.5)
+#       circos.link(first, 
+#                   c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
+#                   second, 
+#                   c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
+#                   col = transparent_violet, border = transparent_violet#, directional = 1, arr.length = 0.4
+#       )
+#     }else{
+#       transparent_orange <- rgb(255/255, 165/255, 0, alpha = 0.5)
+#       circos.link(first, 
+#                   c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
+#                   second, 
+#                   c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
+#                   col = transparent_orange, border = transparent_orange#, directional = 1, arr.length = 0.4
+#       )
+#     }
+#     
+#     }
+#   
+#   # Clear the Circos plot
+#   circos.clear()
+#   dev.off()
+# }
 
 # All types
-pdf(paste0("plot/circos_plot.pdf"), width = 12, height = 8)
+pdf("plot/circos_plot.pdf", width = 8, height = 8)
 sectors <- c(all_scores$first_driver %>% unique(), all_scores$second_driver %>% unique()) %>% unique() %>% sort()
 values = lapply(sectors, function(c){
     if (grepl('p',c)){
@@ -318,18 +379,78 @@ df = values
 df$start <- c(0, head(cumsum(df$value_scaled), -1))
 df$end <- cumsum(df$value_scaled)
 # Initialize the circular layout with proportional widths
+# circos.initialize(factors = df$sector, xlim = df[, c("start", "end")],
+#                     circos.par(cell.padding = c(0.02, 0, 0.02, 0)))
 circos.initialize(factors = df$sector, xlim = df[, c("start", "end")],
-                    circos.par(cell.padding = c(0.02, 0, 0.02, 0)))
+                  circos.par(start.degree = 90, gap.degree = 15))
+
+genes_scaled = lapply(genes$gene, function(g){
+  gene_info <- genes %>% filter(gene==g)
+  sector_name <- gene_info$arm
+  sector_data <- df %>% filter(sector == sector_name)
+  gene_scaled <- sector_data$start + 
+    (gene_info$from / max(values$value)) * (sector_data$end - sector_data$start)
+  gene_info$scaled = gene_scaled
+  gene_info
+})
+genes_scaled = Reduce(rbind, genes_scaled)
+circos.labels(genes_scaled$arm, 
+              x = genes_scaled$scaled, 
+              labels = genes_scaled$gene,
+              cex = 0.7,
+              side = "outside")
 
 # Create sector tracks with labels
 circos.trackPlotRegion(factors = df$sector, ylim = c(0, 1), 
                          panel.fun = function(x, y) {
                            sector.name <- get.cell.meta.data("sector.index")
                            xcenter <- mean(get.cell.meta.data("xlim"))
-                           circos.text(xcenter, 0.5, sector.name, facing = "inside", niceFacing = TRUE)
+                           circos.text(xcenter, 0.3, sector.name, facing = "inside", niceFacing = TRUE)
                          },
                          bg.border = rep("grey94", nrow(df)),
                          bg.col = rep("grey94", nrow(df)))
+
+# for (e in all_events){
+#   
+#   circos.track(factors = e, ylim = c(0, 1), panel.fun = function(x, y) {
+#     value = karyo_annotations %>% filter(event == e) %>% pull(n)
+#     position1 = df %>% filter(sector == e) %>% pull(start)
+#     position2 = mean(df %>% filter(sector == e) %>% pull(start),
+#                      df %>% filter(sector == e) %>% pull(end))
+#     position3 = df %>% filter(sector == e) %>% pull(end)
+#     circos.barplot(value, pos = c(position1,position2,position3), 
+#                    col =karyo_annotations$karyotype,
+#                    sector.index = karyo_annotations$event)
+#   })
+#   
+# }
+#circos.track(ylim = c(0, 1))
+
+# for (i in 1:nrow(genes)) {
+#   gene_info <- genes[i, ]
+#   sector_name <- gene_info$arm  # Match arm names with Circos sectors
+#   
+#   # Get the start position of the sector
+#   sector_data <- df %>% filter(sector == sector_name)
+#   
+#   if (nrow(sector_data) > 0) {
+#     # Scale gene position relative to the sector
+#     gene_scaled <- sector_data$start + 
+#       (gene_info$from / max(values$value)) * (sector_data$end - sector_data$start)
+#     
+#     # Define y-positions
+#     y_start <- 1.05  # Start of annotation line
+#     y_end <- 1.2     # Where gene label appears
+#     
+#     # Draw outward annotation line
+#     circos.lines(x = rep(gene_scaled, 2), y = c(1.5, y_start), sector.index = sector_name)
+#     
+#     # Add gene name, facing outward
+#     circos.text(x = gene_scaled, y = y_end, labels = gene_info$gene, 
+#                 sector.index = sector_name, facing = "clockwise", 
+#                 cex = .7, adj = c(-.55, 0), niceFacing = T)
+#   }
+# }
 
 
 fill = 
