@@ -103,4 +103,32 @@ p
 ggsave("plot/gene_incidence_fraction.pdf", width = 14, height = 5, dpi = 600, units = "in", plot = p)
 
 
+p = gene_analysis_df %>%
+  tidyr::pivot_wider(names_from = class, values_from = frac) %>% 
+  dplyr::group_by(ttype) %>%
+  dplyr::mutate(p_value = p.adjust(p_value, method="BH")) %>%
+  dplyr::filter(p_value <= .05) %>%
+  tidyr::pivot_longer(!c(gene, ttype, p_value)) %>% 
+  dplyr::filter(ttype %in% c("GACA", "ESAD")) %>% 
+  ggplot(mapping = aes(x = gene, y=value, fill=name)) +
+  geom_col(position = "dodge") +
+  facet_grid(~ttype, space = "free_x", scales = "free") +
+  theme_bw() +
+  scale_fill_manual(values = class_colors) +
+  labs(fill="", x='Gene', y="Incidence fraction") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5)) +
+  theme(legend.position = "bottom")
+p
+saveRDS(p, "plot/GACA_ESAD_gene_incidence_fraction.rds")
+ggsave("plot/GACA_ESAD_gene_incidence_fraction.pdf", width = 14, height = 5, dpi = 600, units = "in", plot = p)
 
+
+
+gene_analysis_df %>%
+  tidyr::pivot_wider(names_from = class, values_from = frac) %>% 
+  dplyr::group_by(ttype) %>%
+  dplyr::mutate(p_value = p.adjust(p_value, method="BH")) %>%
+  dplyr::filter(p_value <= .05) %>%
+  tidyr::pivot_longer(!c(gene, ttype, p_value)) %>%
+  dplyr::filter(ttype == "BRCA") %>% 
+  dplyr::filter(gene %in% c("BRCA1", "BRCA2"))

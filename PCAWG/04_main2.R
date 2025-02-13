@@ -4,17 +4,18 @@ require(tidyverse)
 library(patchwork)
 
 #pA = readRDS("plot/scatter_Ncna_v_Nclusters_with_HM.rds") + theme(legend.position = "right")
-pB = readRDS("plot/HM_scatter_with_smooth.rds")
-pC = readRDS("plot/distribution_of_HM_fraction_per_ttype.rds")
+pA = readRDS("plot/HM_scatter_with_smooth.rds")
+pB = readRDS("plot/distribution_of_HM_fraction_per_ttype.rds")
+pC = readRDS("plot/GACA_ESAD_gene_incidence_fraction.rds") + theme(legend.position = 'right')
 pE = readRDS("plot/scatters/gene_level_events.rds")
 
 des = "
-ABBCC
+AABCC
 DDEEE
 FFEEE
 FFEEE"
 
-p = plot_spacer() + free(pB) + free(pC) + plot_spacer()  + free(pE) + plot_spacer() +
+p = free(pA) + free(pB) + free(pC) + plot_spacer()  + free(pE) + plot_spacer() +
   plot_layout(design = des) +
   plot_annotation(tag_levels = "A") &
   theme(
