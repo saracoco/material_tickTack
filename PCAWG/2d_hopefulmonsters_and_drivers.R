@@ -11,7 +11,7 @@ N_CHR = 11
 class_colors = list(
   'Classic' = "#f1a340",
   'HM' = "#998ec3",
-  "WGD" = "#668060"
+  "WGD" = "#a6dba0"
 )
 
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>%
@@ -44,7 +44,7 @@ RES = RES %>%
   na.omit()
 
 # Check GENE in HM and non HM ####
-GENE = "EGFR"
+GENE = "NF1"
 gene_analysis_df = lapply(genes_of_interest, function(GENE) {
   print(GENE)
   driver_res = readRDS("results/res_w_onco_and_ts.rds") %>%
@@ -58,8 +58,10 @@ gene_analysis_df = lapply(genes_of_interest, function(GENE) {
     dplyr::filter(sample_id %in% driver_res$sample_id) %>%
     dplyr::group_by(is_HM, ttype, n) %>%
     dplyr::summarise(nhm = n()) %>%
-    dplyr::mutate(frac = nhm / n)
+    dplyr::mutate(frac = nhm / n) %>% 
+    dplyr::filter(is_HM %in% c("HM", "Classic"))
 
+  tt = "BRCA"
   gene_res = lapply(unique(df_driver$ttype), function(tt) {
     print(tt)
     d = df_driver %>%
@@ -85,16 +87,18 @@ gene_analysis_df = lapply(genes_of_interest, function(GENE) {
 
 
 p = gene_analysis_df %>%
+  tidyr::pivot_wider(names_from = class, values_from = frac) %>% 
   dplyr::group_by(ttype) %>%
   dplyr::mutate(p_value = p.adjust(p_value, method="BH")) %>%
   dplyr::filter(p_value <= .05) %>%
-  ggplot(mapping = aes(x = gene, y=frac, fill=class)) +
+  tidyr::pivot_longer(!c(gene, ttype, p_value)) %>% 
+  ggplot(mapping = aes(x = gene, y=value, fill=name)) +
   geom_col(position = "dodge") +
   facet_grid(~ttype, space = "free_x", scales = "free") +
   theme_bw() +
   scale_fill_manual(values = class_colors) +
   labs(fill="", x='Gene', y="Incidence fraction") +
-  theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=.5))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5))
 p
 ggsave("plot/gene_incidence_fraction.pdf", width = 14, height = 5, dpi = 600, units = "in", plot = p)
 
