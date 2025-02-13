@@ -342,8 +342,7 @@ merge_timing_and_segments <- function(x, chromosomes = paste0('chr', c(1:22)), m
 
   pp = pA + pB + pC + guide_area() + pD +
     plot_layout(design = des_left, guides = "collect") &
-    theme(legend.position = "bottom", legend.direction = "horizontal") &
-    CNAqc:::my_ggplot_theme(cex = .8)
+    theme(legend.position = "bottom", legend.direction = "horizontal")
   pp
 }
 
