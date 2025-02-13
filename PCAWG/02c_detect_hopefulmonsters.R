@@ -9,7 +9,8 @@ source("utils.R")
 
 class_colors = list(
   'Classic' = "#f1a340",
-  'HM' = "#998ec3"
+  'HM' = "#998ec3",
+  "WGD" = "#a6dba0"
 )
 
 k_colors = list(
@@ -45,7 +46,8 @@ RES = lapply(unique(RES$sample_id), function(s) {
 
 RES = RES %>%
   dplyr::group_by(sample_id) %>%
-  dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic"))
+  dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", ifelse(wgd_status != "no_wgd", "WGD", "Classic")))
+
 
 p = RES %>%
   dplyr::filter(wgd_status == "no_wgd") %>%
@@ -106,13 +108,28 @@ p
 saveRDS(p, "plot/all_scatter_Ncna_v_Nclusters_with_HM.rds")
 ggsave("plot/all_scatter_Ncna_v_Nclusters_with_HM.pdf", width = 10, height = 10, units = "in", plot = p)
 
+
+df_incidence = RES %>%
+  dplyr::group_by(ttype, is_HM) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(ttype) %>%
+  dplyr::mutate(sn = sum(n)) %>%
+  dplyr::filter(is_HM %in% c("HM", "WGD")) %>%
+  dplyr::mutate(f = n / sn) %>%
+  dplyr::select(f, is_HM, ttype) %>%
+  tidyr::pivot_wider(values_from = f, names_from = is_HM) %>%
+  dplyr::mutate(HM = ifelse(is.na(HM),0,HM), WGD = ifelse(is.na(WGD),0,WGD)) %>%
+  dplyr::arrange(-HM)
+df_incidence$ttype = factor(df_incidence$ttype, levels=df_incidence$ttype)
+
 p = RES %>%
   dplyr::group_by(ttype, is_HM) %>%
   dplyr::summarise(n = n()) %>%
   dplyr::ungroup() %>%
   dplyr::group_by(ttype) %>%
   dplyr::mutate(sn = sum(n)) %>%
-  dplyr::filter(is_HM == "HM") %>%
+  dplyr::filter(is_HM %in% c("HM")) %>%
   dplyr::mutate(f = n / sn) %>%
   ggplot(mapping = aes(x=reorder(ttype, f), y=f, fill=is_HM)) +
   geom_bar(position="stack", stat="identity") +
@@ -125,6 +142,18 @@ p = RES %>%
 p
 saveRDS(p, "plot/distribution_of_HM_fraction_per_ttype.rds")
 ggsave("plot/distribution_of_HM_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = p)
+
+p = df_incidence %>%
+  tidyr::pivot_longer(!ttype) %>%
+  ggplot(mapping = aes(x=ttype, y=value, fill=name)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  theme_bw() +
+  scale_fill_manual(values = class_colors) +
+  labs(fill="") +
+  labs(x = "Incidence fraction", y="Tumour type")
+saveRDS(p, "plot/distribution_of_HM_and_WGD_fraction_per_ttype.rds")
+ggsave("plot/distribution_of_HM_and_WGD_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = p)
 
 # p = RES %>%
 #   dplyr::group_by(sample_id) %>%
