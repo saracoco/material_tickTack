@@ -21,4 +21,4 @@ p = plot_spacer() + free(pB) + free(pC) + plot_spacer()  + free(pE) + plot_space
     plot.tag = element_text(face = "bold")
   )
 p
-ggsave("plot/main2.pdf", plot = p, width = 12, height = 14, units = "in", dpi = 900)
+ggsave("plot/main2.pdf", plot = p, width = 10, height = 10, units = "in", dpi = 900)
