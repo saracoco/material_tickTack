@@ -9,10 +9,10 @@ pC = readRDS("plot/distribution_of_HM_fraction_per_ttype.rds")
 pE = readRDS("plot/scatters/gene_level_events.rds")
 
 des = "
-ABBC
-DDEE
-FFEE
-FFEE"
+ABBCC
+DDEEE
+FFEEE
+FFEEE"
 
 p = plot_spacer() + free(pB) + free(pC) + plot_spacer()  + free(pE) + plot_spacer() +
   plot_layout(design = des) +

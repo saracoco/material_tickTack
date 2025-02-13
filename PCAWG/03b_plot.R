@@ -1,5 +1,5 @@
-rm(list=ls())
-.libPaths(new="~/R/rstudio_v3/") 
+
+rm(list = ls())
 library(CNAqc)
 library(tickTack)
 library(dplyr)
@@ -8,9 +8,9 @@ library(fuzzyjoin)
 library(ggplot2)
 library(patchwork)
 library(data.table)
-library(tidyr)
-source("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/simulations_v2/utils_plot.R")
-
+library(tidyverse)
+#source("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/simulations_v2/utils_plot.R")
+source("../simulations_v2/utils_plot.R")
 
 eg_1_component <- "0a9c9db0-c623-11e3-bf01-24c6515278c0"
 eg_2_component <- "2a8d63eb-0174-4213-9214-413f391f512c"
@@ -31,11 +31,28 @@ x_after_inference_PCAWG$ploidy <- fit$ploidy
 x_after_inference_PCAWG$purity <- fit$purity
 x_after_inference_PCAWG$n_mutations <- fit$n_snvs
 x_after_inference_PCAWG$n_cna_clonal <- fit$n_cna_clonal
-x_after_inference_PCAWG$ttype <- unique(fit$snvs$ttype)[2] 
+x_after_inference_PCAWG$ttype <- unique(fit$snvs$ttype)[2]
+x_after_inference_PCAWG$K = res_model_selection$best_K
 
 
 x <- x_after_inference_PCAWG
 results<-x$results_timing
+
+# plot_segments_tick_tack(x)
+
+
+merge_timing_and_segments(x)
+ggsave("../../plot_sample_3_CNA.pdf",height = 8,width = 15)
+
+
+# plot_1 <- plot_segments_tick_tack_data(x)
+
+
+
+
+
+
+
 
 K=3
 
@@ -47,15 +64,15 @@ K=3
 # highlight = x$most_prevalent_karyotype
 # highlight_QC = FALSE
 
-# plot_CNA <- plot_segments_h(x) + 
+# plot_CNA <- plot_segments_h(x) +
 #   theme(legend.position='right')+
 #   ggplot2::theme(axis.title.x = element_blank())
 # data_plot <- plot_segments_tick_tack_data(x, K = K )+
 #   theme(legend.position='right') +
-#   ggplot2::theme(axis.title.x = element_blank()) 
+#   ggplot2::theme(axis.title.x = element_blank())
 # timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) +
 #   theme(legend.position='right')
-# 
+#
 # list_plot = list(plot_CNA,data_plot,timing_plot)
 # saveRDS(list_plot, "./plot/PCAWG_example_2_components.rds")
 
