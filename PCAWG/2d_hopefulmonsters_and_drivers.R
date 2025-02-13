@@ -85,15 +85,17 @@ gene_analysis_df = lapply(genes_of_interest, function(GENE) {
 gene_analysis_df %>% 
   dplyr::filter(gene == "RAD51")
 
-gene_analysis_df %>%
+p = gene_analysis_df %>%
   dplyr::filter(p_value <= .05) %>%
   ggplot(mapping = aes(x = gene, y=frac, fill=class)) +
   geom_col(position = "dodge") +
   facet_grid(~ttype, space = "free_x", scales = "free") +
   theme_bw() +
   scale_fill_manual(values = class_colors) +
-  labs(fill="", x='Gene', y="Incidence fraction")
-
+  labs(fill="", x='Gene', y="Incidence fraction") +
+  theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=.5))
+p
+ggsave("plot/gene_incidence_fraction.pdf", width = 11, height = 5, dpi = 600, units = "in", plot = p)
 
 
 
