@@ -50,9 +50,9 @@ RES = RES %>%
   #dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic")) %>%
   na.omit()
 
-
 p = RES %>%
   #dplyr::filter(wgd_status == "no_wgd") %>%
+  dplyr::filter(is_HM %in% c("Classic", "HM")) %>% 
   ggplot(mapping = aes(x=n_cna, y=n_clusters, col=is_HM, label=is_HM)) +
   geom_point(alpha = .8) +
   geomtextpath::geom_labelsmooth(fill="white", method = "lm", formula = y~x) +
@@ -67,31 +67,22 @@ p
 saveRDS(p, "plot/HM_scatter_with_smooth.rds")
 ggsave("plot/HM_scatter_with_smooth.pdf", width = 8, height = 8, units = "in", plot = p)
 
-# tops = RES %>%
-#   dplyr::group_by(ttype) %>%
-#   dplyr::mutate(nsamples = n()) %>%
-#   dplyr::select(ttype, nsamples) %>%
-#   dplyr::distinct() %>%
-#   dplyr::arrange(-nsamples)
-# tops = tops$ttype[1:6]
-#
-# p = RES %>%
-#   dplyr::filter(wgd_status == "no_wgd") %>%
-#   dplyr::group_by(ttype) %>%
-#   dplyr::mutate(nsamples = n()) %>%
-#   dplyr::filter(ttype %in% tops) %>%
-#   ggplot(mapping = aes(x=n_cna, y=n_clusters, col=is_HM)) +
-#   geom_point() +
-#   facet_wrap(~ttype, nrow = 2,) +
-#   #scale_color_manual(values = class_colors) +
-#   theme_bw() +
-#   labs(x = "N CNA", y= "N clusters", col="") +
-#   scale_x_continuous(breaks = scales::pretty_breaks(n=3)) +
-#   scale_y_continuous(breaks = scales::pretty_breaks(n=3)) +
-#   theme(legend.position = "bottom")
-# p
-# saveRDS(p, "plot/scatter_Ncna_v_Nclusters_with_HM.rds")
-# ggsave("plot/scatter_Ncna_v_Nclusters_with_HM.pdf", width = 8, height = 8, units = "in", plot = p)
+p = RES %>%
+  #dplyr::filter(wgd_status == "no_wgd") %>%
+  ggplot(mapping = aes(x=n_cna, y=n_clusters, col=is_HM, label=is_HM)) +
+  geom_point(alpha = .8) +
+  geomtextpath::geom_labelsmooth(fill="white", method = "lm", formula = y~x) +
+  scale_color_manual(values = class_colors) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  labs(x = "N CNA", y= "N clusters") +
+  scale_x_continuous(breaks = scales::pretty_breaks(n=3)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n=3)) +
+  scale_x_continuous(transform = "log10")
+p
+saveRDS(p, "plot/WGD_HM_scatter_with_smooth.rds")
+ggsave("plot/WGD_HM_scatter_with_smooth.pdf", width = 8, height = 8, units = "in", plot = p)
+
 
 p = RES %>%
   dplyr::group_by(ttype) %>%
@@ -109,6 +100,20 @@ p = RES %>%
 p
 saveRDS(p, "plot/all_scatter_Ncna_v_Nclusters_with_HM.rds")
 ggsave("plot/all_scatter_Ncna_v_Nclusters_with_HM.pdf", width = 10, height = 10, units = "in", plot = p)
+
+
+
+RES %>%
+  dplyr::group_by(ttype, is_HM) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(ttype) %>%
+  dplyr::mutate(sn = sum(n)) %>%
+  #dplyr::filter(is_HM %in% c("HM", "WGD")) %>%
+  dplyr::mutate(f = n / sn) %>%
+  dplyr::select(f, is_HM, ttype) %>% 
+  ggplot(mapping = aes(x = ttype, y=f, fill=is_HM)) +
+  geom_col(position = "stack")
 
 
 df_incidence = RES %>%
@@ -133,6 +138,7 @@ p = RES %>%
   dplyr::mutate(sn = sum(n)) %>%
   dplyr::filter(is_HM %in% c("HM")) %>%
   dplyr::mutate(f = n / sn) %>%
+  dplyr::arrange(-f) %>% 
   ggplot(mapping = aes(x=reorder(ttype, f), y=f, fill=is_HM)) +
   geom_bar(position="stack", stat="identity") +
   scale_fill_manual(values = class_colors) +
