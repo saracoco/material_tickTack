@@ -285,29 +285,39 @@ add_drivers_to_segment_plot = function(x, drivers_list, base_plot)
 
 merge_timing_and_segments <- function( x, K, colour_by = "karyotype", split_contiguous_segments = TRUE, chromosomes = paste0('chr', c(1:22)), max_Y_height = 6, cn = 'absolute', highlight = x$most_prevalent_karyotype, highlight_QC = FALSE) {
   
-  #genome_len = CNAqc:::get_reference('hg19') %>% 
-  plot_CNA <- plot_segments_h(x) + 
-    theme(legend.position='bottom')+
-    ggplot2::theme(axis.title.x = element_blank())+
-    ylab('Allele count')
-  #cnaqc_x = CNAqc::init(mutations = x$mutations, cna = x$cna, purity = x$metadata$purity, ref = 'hg19')
-  #CNAqc::plot_segments(cnaqc_x)
+  
+  cnaqc_x = CNAqc::init(mutations = x$mutations, cna = x$cna, purity = x$metadata$purity, ref = 'hg19')
+  plot_CNA <- CNAqc::plot_segments(cnaqc_x,chromosomes = chromosomes)+
+    theme(legend.position='right', panel.spacing = unit(0, "lines")) +
+    ggplot2::theme(axis.title.x = element_blank()) 
   
   data_plot <- plot_segments_tick_tack_data(x, K = K )+
-    theme(legend.position='bottom') +
-    ggplot2::theme(axis.title.x = element_blank()) +
-    ylab('VAF')
+    theme(legend.position='right',panel.spacing = unit(0, "lines")) +
+    ggplot2::theme(axis.title.x = element_blank()) 
   
   timing_plot <- plot_segments_tick_tack(x, colour_by = "clock_mean", K = K) +
-    theme(legend.position='bottom')+
-    ylab(bquote(tau))
+    theme(legend.position='right',panel.spacing = unit(0, "lines"))
+  
+  plot_vaf <- plot_vaf(x) +
+    plot_vaf <- plot_vaf +
+    theme(plot.background = element_rect(fill = "white", color = "white", size = 20)) 
   
   # segment_plot <- plot_segments_h(x, chromosomes, max_Y_height, cn, highlight, highlight_QC) +
   #   ggplot2::theme(axis.title.x = element_blank())  # Keep chromosome labels only on this plot
   
-  #combined_plot <- plot_CNA / data_plot / timing_plot + plot_layout(ncol = 1, heights = c(1, 1,1))
-  combined_plot = ggpubr::ggarrange(
-    plot_CNA, data_plot,timing_plot, ncol=1, align = 'hv',heights = c(1,1,1), common.legend = F) #, legend = 'bottom'
+  
+  
+  my_plot <- ggpubr::ggarrange(plot_CNA , data_plot , timing_plot, align = "hv", widths = c(1,1,1), heights = c(0.3,0.3,0.4), ncol=1)
+  combined_plot <- patchwork::wrap_plots(my_plot, plot_vaf,
+                                         design="
+                        AAAAAAAAAAAABBBB
+                        AAAAAAAAAAAABBBB
+                        AAAAAAAAAAAABBBB
+                        AAAAAAAAAAAABBBB
+                        AAAAAAAAAAAABBBB
+                        AAAAAAAAAAAABBBB
+                        ")
+  
   
   return(combined_plot)
 }
@@ -401,8 +411,7 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
       x = "Chromosome",
       y = bquote("Pseudotime"~tau),
       fill = "Cluster"  
-    ) + ggplot2::labs(caption = capt_label)+
-    scale_y_continuous(breaks = seq(0, 1, by = .5))
+    ) + ggplot2::labs(caption = capt_label)
   
   drivers_list = get_drivers(x, chromosomes = paste0('chr', c(1:22)))
   base_plot = add_drivers_to_segment_plot(x, 
@@ -463,9 +472,7 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
     '2:2' = 'firebrick3'  
   )
   
-  # six_color_palette <- six_color_palette <- RColorBrewer::brewer.pal(6, "RdYlBu")
   
-  #ggplot2::ggplot() +
   CNAqc:::blank_genome(ref='hg19', chromosomes = paste0("chr", c(1:22)))+
     ggplot2::geom_point(
       data = matched_mutations, 
@@ -477,25 +484,13 @@ plot_segments_tick_tack_data <- function(x, colour_by = "clock_mean", K = K) {
       alpha = 0.5,
       size=0.1
     ) +
-    #ggplot2::scale_fill_viridis_d(option = "cividis")  +  
     ggplot2::scale_color_manual(values = k_colors, name = "CN") +  
     ggplot2::guides(
       color = ggplot2::guide_legend(override.aes = list(size = 4))) +
-    # ggplot2::scale_x_continuous(
-    #   breaks = reference_genome$to,
-    #   labels = gsub("chr", "", reference_genome$chr)
-    # ) +
-    #ggplot2::theme_bw() +
-    # ggplot2::theme(
-    #   legend.position = "bottom",
-    #   axis.text.x = ggplot2::element_text(angle = 0)
-    # ) +
-    #ggplot2::lims(y = c(0, 1)) +
     ggplot2::labs(
       x = "Chromosome",
       y = bquote("Variant Allele Frequency (VAF)") 
-    ) +
-    scale_y_continuous(breaks = seq(0, 1, by = .5))
+    ) 
   
   
   
@@ -828,3 +823,80 @@ add_segments_to_plot = function(segments, base_plot, cn)
   return(base_plot)
 }
 
+
+
+plot_vaf = function(x){
+  
+  mutations <- x$mutations
+  results <- x$results_timing
+  reference_genome <- get_reference (x$reference_genome)
+  
+  vfrom = reference_genome$from
+  names(vfrom) = reference_genome$chr
+  
+  absolute_mutations <- mutations  %>%
+    dplyr::mutate(from = .data$from + vfrom[.data$chr],
+                  to = .data$to + vfrom[.data$chr])
+  
+  segments <- results$data$accepted_cna
+  segments$from = lapply(segments$segment_name, function(s) {unlist(strsplit(s, "_"))[2]}) %>% unlist() %>% as.numeric()
+  segments$to = lapply(segments$segment_name, function(s) {unlist(strsplit(s, "_"))[3]}) %>% unlist() %>% as.numeric()
+  
+  absolute_segments <- segments %>%
+    dplyr::mutate(from = .data$from + vfrom[.data$chr],
+                  to = .data$to + vfrom[.data$chr])
+  
+  summarized_results <- results$draws_and_summary[[K]]$summarized_results %>%
+    dplyr::mutate(from = absolute_segments[.data$segment_id,]$from) %>%
+    dplyr::mutate(to = absolute_segments[.data$segment_id,]$to) %>%
+    dplyr::mutate(tau_mean = ifelse(.data$clock_mean  < 1, .data$clock_mean , 1)) %>%
+    dplyr::mutate(tau_high = ifelse(.data$clock_high < 1, .data$clock_high, 1)) %>%
+    dplyr::mutate(tau_low = .data$clock_low)
+  
+  accepted_mutations = data.frame()
+  for (segment_idx in 1:nrow(summarized_results)) {
+    segment <- summarized_results[segment_idx, ]
+    print(segment$chr)
+    segment_mutations <- absolute_mutations %>%
+      dplyr::filter(.data$chr == segment$chr, .data$from > segment$from, .data$to < segment$to) %>%
+      tidyr::drop_na(DP)
+    # print(nrow(segment_mutations))
+    cluster = summarized_results$tau_mean[segment_idx] # tau mean o clock mean?
+    peaks = x$results_timing$data$input_data$peaks[[segment_idx]]
+    # if (nrow(segment_mutations)> 40){
+    segment_mutations <- segment_mutations %>% mutate(cluster = cluster)
+    accepted_mutations <- bind_rows(accepted_mutations, segment_mutations)
+    # }
+  }
+  as.factor(accepted_mutations$cluster)
+  accepted_mutations <- accepted_mutations %>% mutate(VAF = NV/DP) 
+  
+  accepted_mutations$cluster <- as.numeric(factor(accepted_mutations$cluster))
+  
+  k_colors = list(
+    '2:0' = 'turquoise4',
+    '2:1' = ggplot2::alpha('orange', .8),
+    '2:2' = 'firebrick3'  
+  )
+  my_palette <- c(  "#66a61e",  "#7570b3", "#e7298a", "#1b9e77", "#d95f02")
+  
+  
+  ggplot(accepted_mutations, aes(x = VAF)) + 
+    geom_histogram(aes(y = after_stat(density),fill = as.factor(cluster)), 
+                   bins = 30,  
+                   alpha = 0.3) +  
+    geom_density(color = "black", linewidth = 0.5) + 
+    ggplot2::scale_fill_manual(values = my_palette)+
+    # geom_density(aes(color="from"))+
+    ggplot2::labs(
+      x = "VAF",
+      fill = "Cluster"  
+    ) +
+    facet_grid(cluster~karyotype, labeller = labeller(var1 = label_both, var2 = label_both))+
+    theme_minimal()+
+    # theme(strip.text = element_text(color = "gray30"))  +
+    theme(panel.border = element_rect(color = "black", fill = NA, linewidth = 0.2),
+          strip.background = element_rect(fill = "gray80", color = "gray30"))
+  
+  
+}
