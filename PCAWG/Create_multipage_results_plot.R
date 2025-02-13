@@ -7,7 +7,7 @@ library(ggplot2)
 image_list = list()
 data_dir = '~/dati_Orfeo/scocomello/material_tickTack/PCAWG/results_whole/'
 samples=list.files(data_dir)
-png_files = lapply(samples[40:60], function(i){
+png_files = lapply(samples[100:200], function(i){
   pdf_file_s <- paste0(data_dir, i, '/plots/plot_timing.png')
   pdf_file_h <- paste0(data_dir, i, '/plots/plot_timing_h.png')
   c(pdf_file_s, pdf_file_h)

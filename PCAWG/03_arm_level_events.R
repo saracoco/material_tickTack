@@ -241,7 +241,7 @@ karyo_annotations = Reduce(rbind, karyo_annotations)
 load("data/gene_coordinates_hg19.rda")
 drivers = read.csv('./IntOGen_2024/2024-06-18_IntOGen-Drivers/Compendium_Cancer_Genes.tsv', sep='\t') %>%
   filter(CANCER_TYPE %in% c('LIHB','PANCREAS', 'PAAD', 'MEL', 'BRCA', 'COAD','COADREAD')) %>%
-  filter(SAMPLES > 25)
+  filter(SAMPLES > 10)
 gene_coordinates_hg19 = gene_coordinates_hg19 %>% filter(gene %in% drivers$SYMBOL)
 
 genes = lapply(all_events, function(c){
@@ -502,7 +502,9 @@ for (i in 1:nrow(all_scores)){
       #             col = color[t], border = color[t], directional = -1, arr.length = 0.5)
     }
     
-  }
+ 
+    
+     }
 
 # Clear the Circos plot
 circos.clear()
