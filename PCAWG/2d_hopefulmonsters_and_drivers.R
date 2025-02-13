@@ -10,7 +10,8 @@ source("utils.R")
 N_CHR = 11
 class_colors = list(
   'Classic' = "#f1a340",
-  'HM' = "#998ec3"
+  'HM' = "#998ec3",
+  "WGD" = "#668060"
 )
 
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>%
@@ -38,9 +39,9 @@ RES = lapply(unique(RES$sample_id), function(s) {
 
 RES = RES %>%
   dplyr::group_by(sample_id) %>%
-  dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic")) %>%
+  dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd" | ploidy == 2) & any(n_chr_affected >= N_CHR), "HM", ifelse(wgd_status == "wgd", "WGD", "Classic"))) %>%
+  #dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic")) %>%
   na.omit()
-
 
 # Check GENE in HM and non HM ####
 GENE = "EGFR"
@@ -82,10 +83,10 @@ gene_analysis_df = lapply(genes_of_interest, function(GENE) {
   gene_res
 }) %>% do.call("bind_rows", .)
 
-gene_analysis_df %>% 
-  dplyr::filter(gene == "RAD51")
 
 p = gene_analysis_df %>%
+  dplyr::group_by(ttype) %>%
+  dplyr::mutate(p_value = p.adjust(p_value, method="BH")) %>%
   dplyr::filter(p_value <= .05) %>%
   ggplot(mapping = aes(x = gene, y=frac, fill=class)) +
   geom_col(position = "dodge") +

@@ -46,11 +46,13 @@ RES = lapply(unique(RES$sample_id), function(s) {
 
 RES = RES %>%
   dplyr::group_by(sample_id) %>%
-  dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", ifelse(wgd_status != "no_wgd", "WGD", "Classic")))
+  dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd" | ploidy == 2) & any(n_chr_affected >= N_CHR), "HM", ifelse(wgd_status == "wgd", "WGD", "Classic"))) %>%
+  #dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic")) %>%
+  na.omit()
 
 
 p = RES %>%
-  dplyr::filter(wgd_status == "no_wgd") %>%
+  #dplyr::filter(wgd_status == "no_wgd") %>%
   ggplot(mapping = aes(x=n_cna, y=n_clusters, col=is_HM, label=is_HM)) +
   geom_point(alpha = .8) +
   geomtextpath::geom_labelsmooth(fill="white", method = "lm", formula = y~x) +
@@ -94,7 +96,7 @@ ggsave("plot/HM_scatter_with_smooth.pdf", width = 8, height = 8, units = "in", p
 p = RES %>%
   dplyr::group_by(ttype) %>%
   dplyr::mutate(nsamples = n()) %>%
-  dplyr::filter(wgd_status == "no_wgd") %>%
+  dplyr::filter(is_HM %in% c("HM", "Classic")) %>%
   ggplot(mapping = aes(x=n_cna, y=n_clusters, col=is_HM)) +
   geom_point() +
   facet_wrap(~ttype) +
@@ -136,7 +138,7 @@ p = RES %>%
   scale_fill_manual(values = class_colors) +
   theme_bw() +
   coord_flip() +
-  scale_y_continuous(limits = c(0,.2)) +
+  #scale_y_continuous(limits = c(0,.2)) +
   labs(x = "Tumour type", y="HM fraction") +
   theme(legend.position = "none")
 p
