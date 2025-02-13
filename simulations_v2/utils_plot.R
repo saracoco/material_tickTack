@@ -1013,6 +1013,8 @@ plot_vaf = function(x, K){
     scale_color_manual(values = COL) +
     scale_fill_manual(values = my_palette) +
     theme_minimal() +
+    scale_x_continuous(breaks = scales::pretty_breaks(n=3)) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n=3)) +
     labs(x = "VAF", y = "Density", fill = "", col = "Cluster", linetype="Peak") +
     ggh4x::facet_nested(tickTack_cl~"CN"+karyotype) +
     # facet_grid(tickTack_cl ~ karyotype,
