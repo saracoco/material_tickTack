@@ -1,4 +1,10 @@
 
+TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1")
+Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS")
+DNA_repair = c("RAD51")
+#genes_of_interest <- c(TSGs, Oncogenes)
+genes_of_interest <- c(TSGs, Oncogenes, DNA_repair)
+
 is_fittable = function(fit, possible_k = c("2:1", "2:2", "2:0"), alpha = .05, min_mutations_number = 2) {
   get_clonal_peaks = function(k, purity) {
     multiplicities <- strsplit(k, ":") %>% unlist() %>% as.numeric()

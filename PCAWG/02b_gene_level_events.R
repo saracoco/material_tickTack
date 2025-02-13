@@ -235,12 +235,8 @@ for (tumour_type in unique(res_w_drivers$ttype)) {
   }
 }
 
-TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1")
-Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS")
-genes_of_interest <- c(TSGs, Oncogenes)
-
 p = scores_df_all %>% 
-  dplyr::mutate(class = ifelse(second_driver %in% Oncogenes, "Oncogene", "TSG")) %>% 
+  dplyr::mutate(class = ifelse(second_driver %in% Oncogenes, "Oncogene", ifelse(second_driver %in% TSGs, "TSG", "DNA-repair"))) %>% 
   dplyr::mutate(fraction = n_samples / max_samples) %>% 
   dplyr::filter(p.value <= .05) %>% 
   #dplyr::mutate() %>% 
@@ -254,18 +250,10 @@ p = scores_df_all %>%
   geom_vline(xintercept = 0, linetype = "dashed") +
   labs(x = "Score", y="Driver", fill="Score", size="Sample fraction", col="") +
   facet_grid(ttype~., scales = "free", space="free") +
-  scale_color_manual(values = list("TSG" = alpha("#006663", .7), "Oncogene"=alpha("#b4662a", .7)))
+  scale_color_manual(values = list("TSG" = alpha("#006663", .7), "Oncogene"=alpha("#b4662a", .7), "DNA-repair"=alpha("#BDB76B", .7)))
 p
 ggsave(filename = "plot/scatters/gene_level_events.pdf", width = 8, height = 10, units = 'in', plot = p)
 saveRDS(p, "plot/scatters/gene_level_events.rds")
-
-# scores_df_all %>% 
-#   dplyr::mutate(fraction = n_samples / max_samples) %>% 
-#   #dplyr::filter(fraction >= .1) %>% 
-#   dplyr::mutate(score = abs(score)) %>% 
-#   dplyr::mutate(class = ifelse(p.value >= .05, "Not significant", "Significant")) %>% 
-#   ggplot(mapping = aes(x=score, fill = class)) +
-#   geom_histogram()
 
 p <- scores_df_all %>% 
   dplyr::mutate(fraction = n_samples / max_samples) %>% 
@@ -277,7 +265,7 @@ p <- scores_df_all %>%
   geom_point() +
   geom_vline(xintercept = c(.1, -.1), linetype="dashed") +
   geom_hline(yintercept = -log10(.05), linetype="dashed") +
-  ggrepel::geom_label_repel(col="black", size=4, fill=alpha('white', .99), min.segment.length = 0, box.padding = .5) +
+  ggrepel::geom_label_repel(col="black", size=4, fill=alpha('white', .99), min.segment.length = 0, box.padding = .5, max.overlaps = Inf) +
   theme_bw() +
   #scale_color_manual(values = list("Not signif."= "grey70", "Signif."="indianred")) +
   labs(x = "Score", y=bquote(-log[10] ~ pvalue), col="") +

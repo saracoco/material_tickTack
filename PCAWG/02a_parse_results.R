@@ -58,6 +58,7 @@ load("data/gene_coordinates_hg19.rda")
 
 TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1")
 Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS")
+DNA_repair = c("RAD51")
 
 # TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1",
 #          "ARID1A", "ATM", "BAP1", "CDH1", "FANCD2", "MLH1", "NBN", "PBRM1", "RAD51C", "STK11",
@@ -69,7 +70,7 @@ Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "
 #                "FGFR1", "FGFR2", "FGFR3", "HRAS", "CDK4", "CDK6", "NOTCH1", "BCL2", "BCL6", 
 #                "FOXA1", "FOXP1", "ETV1", "ETV4", "ETV5", "FOS", "JUN", "SRC", "RSPO2", "RSPO3")
 
-genes_of_interest <- c(TSGs, Oncogenes)
+genes_of_interest <- c(TSGs, Oncogenes, DNA_repair)
 
 gene_coordinates_hg19 <- gene_coordinates_hg19 %>% 
   dplyr::filter(gene %in% genes_of_interest)
@@ -90,7 +91,9 @@ genes_annotation = lapply(1:nrow(RESfiltered), function(i) {
     dplyr::tibble(gene = paste(c(gene), collapse = "-"), type = "Multiple")
   } else if (gene %in% Oncogenes) {
     dplyr::tibble(gene = gene, type = "Oncogene")
-  } else {
+  } else if (gene %in% DNA_repair) {
+    dplyr::tibble(gene = gene, type = "DNA_repair")
+  }else {
     dplyr::tibble(gene = gene, type = "TumourSuppressor")
   }
 }) %>% do.call("bind_rows", .)

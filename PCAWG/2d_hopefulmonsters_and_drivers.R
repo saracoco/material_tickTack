@@ -13,10 +13,6 @@ class_colors = list(
   'HM' = "#998ec3"
 )
 
-TSGs <- c("TP53", "RB1", "BRCA1", "BRCA2", "PTEN", "APC", "CDKN2A", "SMAD4", "VHL", "NF1")
-Oncogenes <- c("MYC", "KRAS", "BRAF", "EGFR", "HER2", "ALK", "PIK3CA", "ABL1", "CCND1", "NRAS")
-genes_of_interest <- c(TSGs, Oncogenes)
-
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>%
   dplyr::select(sample_id, ttype) %>%
   dplyr::distinct()
@@ -86,6 +82,8 @@ gene_analysis_df = lapply(genes_of_interest, function(GENE) {
   gene_res
 }) %>% do.call("bind_rows", .)
 
+gene_analysis_df %>% 
+  dplyr::filter(gene == "RAD51")
 
 gene_analysis_df %>%
   dplyr::filter(p_value <= .05) %>%
@@ -93,8 +91,9 @@ gene_analysis_df %>%
   geom_col(position = "dodge") +
   facet_grid(~ttype, space = "free_x", scales = "free") +
   theme_bw() +
-  scale_fill_manual(values = class_colors)
+  scale_fill_manual(values = class_colors) +
+  labs(fill="", x='Gene', y="Incidence fraction")
 
 
 
-# PRAD 51 specifically
+
