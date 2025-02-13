@@ -1,30 +1,34 @@
 # Load required packages
+library(dbscan)
 library(ggplot2)
 library(dplyr)
 
 # Compute Z-scores for CNA events and Clusters assigned
 data <- df %>%
-  mutate(
-    Z_CNA = (n_events - mean(n_events)) / sd(n_events),
-    Z_Clusters = (n_clusters - mean(n_clusters)) / sd(n_clusters)
-  )
+  dplyr::rename(CNA_events=n_events, Clusters_assigned=n_clusters)
 
-# Define hopeful monsters: High CNA Z-score (≥ 2) & Low Cluster Z-score (≤ -2)
-z_threshold_high <- 1  # High threshold for CNA events
-z_threshold_low <- -1  # Low threshold for clusters assigned
+# Prepare data for DBSCAN (excluding Sample_ID)
+dbscan_data <- data[, c("CNA_events", "Clusters_assigned")]
 
+# Perform DBSCAN clustering
+dbscan_result <- dbscan(dbscan_data, eps = 5, minPts = 20)  # Adjust eps & minPts if needed
+
+# Add DBSCAN cluster labels to the dataset
+data$DBSCAN_Cluster <- dbscan_result$cluster
+
+# Identify hopeful monsters: DBSCAN labels outliers as "0"
 data <- data %>%
-  mutate(Hopeful_Monster = (Z_CNA >= z_threshold_high) & (Z_Clusters <= z_threshold_low))
+  mutate(Hopeful_Monster = DBSCAN_Cluster == 0)
 
-# Scatter plot to visualize hopeful monsters
-ggplot(data, aes(x = n_events, y = n_clusters, color = Hopeful_Monster)) +
+# Scatter plot to visualize DBSCAN clusters and hopeful monsters
+ggplot(data, aes(x = CNA_events, y = Clusters_assigned, color = as.factor(DBSCAN_Cluster))) +
   geom_point(size = 3) +
   theme_minimal() +
-  scale_color_manual(values = c("black", "red")) +
-  labs(title = "Hopeful Monster Detection (Z-Score Based)",
+  facet_wrap(~ploidy) +
+  labs(title = "Hopeful Monster Detection Using DBSCAN",
        x = "Number of CNA Events",
        y = "Number of Clusters Assigned",
-       color = "Hopeful Monster")
+       color = "DBSCAN Cluster")
 
 # Display hopeful monster samples
 data %>% filter(Hopeful_Monster == TRUE)
