@@ -95,7 +95,7 @@ p = gene_analysis_df %>%
   labs(fill="", x='Gene', y="Incidence fraction") +
   theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=.5))
 p
-ggsave("plot/gene_incidence_fraction.pdf", width = 11, height = 5, dpi = 600, units = "in", plot = p)
+ggsave("plot/gene_incidence_fraction.pdf", width = 14, height = 5, dpi = 600, units = "in", plot = p)
 
 
 
