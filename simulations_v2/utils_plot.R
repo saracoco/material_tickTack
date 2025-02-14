@@ -13,6 +13,14 @@ color = c(
   'tickTack' = alpha('#CD534C', alpha = ALPHA)
 )
 
+k_colors = list(
+  '1:1' = '#228B22CC',
+  '1:0' = 'steelblue',
+  '2:0' = 'turquoise4',
+  '2:1' = ggplot2::alpha('orange', .8),
+  '2:2' = 'firebrick3'
+)
+
 convert_name = function(n) {
   if (grepl("AmpTime", n)) return("AmplificationTimeR")
   if (grepl("MutTimeR", n)) return("MutationTimeR")
@@ -370,6 +378,8 @@ plot_segments_tick_tack <- function(x, colour_by = "clock_mean", K = 1) {
   ##############
 
   k_colors = list(
+    '1:1' = '#228B22CC',
+    '1:0' = 'steelblue',
     '2:0' = 'turquoise4',
     '2:1' = ggplot2::alpha('orange', .8),
     '2:2' = 'firebrick3'
@@ -449,16 +459,17 @@ plot_segments_tick_tack_CN <- function(cnaqc_x, K = K, max_alleles = 6, chromoso
     dplyr::filter(Major <= max_alleles & minor <= max_alleles)
 
   k_colors = list(
+    '1:1' = '#228B22CC',
+    '1:0' = 'steelblue',
     '2:0' = 'turquoise4',
     '2:1' = ggplot2::alpha('orange', .8),
     '2:2' = 'firebrick3'
   )
-
   p = CNAqc:::blank_genome(cnaqc_x$reference_genome, chromosomes = paste0("chr", c(1:22)))
 
   # Add shadows
   p = p + ggplot2::geom_rect(
-    data = absolute_segments %>% dplyr::filter(karyotype %in% c("2:2", "2:1", "2:0")),
+    data = absolute_segments %>% dplyr::filter(karyotype %in% c('2:0', '1:0', '1:1', '2:1', '2:2')),
     ggplot2::aes(
       xmin = from,
       xmax = to,
