@@ -41,7 +41,8 @@ RES = lapply(unique(RES$sample_id), function(s) {
     dplyr::group_by(clock_rank) %>%
     dplyr::mutate(n_chr_affected = length(unique(chr))) %>%
     dplyr::select(sample_id, ttype, ploidy, wgd_status, n_cna, n_clusters, n_chr_affected, clock_rank) %>%
-    dplyr::distinct()
+    dplyr::distinct() %>%
+    dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd" | ploidy == 2) & any(n_chr_affected >= N_CHR), "HM", ifelse(wgd_status == "wgd", "WGD", "Classic")))
 }) %>% do.call("bind_rows", .)
 
 RES = RES %>%
@@ -50,9 +51,14 @@ RES = RES %>%
   #dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic")) %>%
   na.omit()
 
+RES = RES %>%
+  dplyr::select(!c(n_chr_affected, clock_rank)) %>%
+  dplyr::group_by(sample_id) %>%
+  dplyr::distinct()
+
 p = RES %>%
   #dplyr::filter(wgd_status == "no_wgd") %>%
-  dplyr::filter(is_HM %in% c("Classic", "HM")) %>% 
+  dplyr::filter(is_HM %in% c("Classic", "HM")) %>%
   ggplot(mapping = aes(x=n_cna, y=n_clusters, col=is_HM, label=is_HM)) +
   geom_point(alpha = .8) +
   geomtextpath::geom_labelsmooth(fill="white", method = "lm", formula = y~x) +
@@ -101,7 +107,10 @@ p
 saveRDS(p, "plot/all_scatter_Ncna_v_Nclusters_with_HM.rds")
 ggsave("plot/all_scatter_Ncna_v_Nclusters_with_HM.pdf", width = 10, height = 10, units = "in", plot = p)
 
-
+RES %>%
+  dplyr::group_by(ttype, is_HM) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::pull(n) %>% sum()
 
 RES %>%
   dplyr::group_by(ttype, is_HM) %>%
@@ -111,35 +120,31 @@ RES %>%
   dplyr::mutate(sn = sum(n)) %>%
   #dplyr::filter(is_HM %in% c("HM", "WGD")) %>%
   dplyr::mutate(f = n / sn) %>%
-  dplyr::select(f, is_HM, ttype) %>% 
+  dplyr::select(f, is_HM, ttype) %>%
   ggplot(mapping = aes(x = ttype, y=f, fill=is_HM)) +
   geom_col(position = "stack")
 
 
 df_incidence = RES %>%
-  dplyr::group_by(ttype, is_HM) %>%
+  dplyr::left_join(readRDS("data/metadata_all.rds") %>%
+                     dplyr::group_by(tumor_type) %>%
+                     dplyr::summarise(nPCAWG=n()) %>%
+                     dplyr::rename(ttype=tumor_type), by="ttype") %>%
+  dplyr::group_by(ttype, is_HM, nPCAWG) %>%
   dplyr::summarise(n = n()) %>%
   dplyr::ungroup() %>%
   dplyr::group_by(ttype) %>%
   dplyr::mutate(sn = sum(n)) %>%
   dplyr::filter(is_HM %in% c("HM", "WGD")) %>%
   dplyr::mutate(f = n / sn) %>%
-  dplyr::select(f, is_HM, ttype) %>%
-  tidyr::pivot_wider(values_from = f, names_from = is_HM) %>%
-  dplyr::mutate(HM = ifelse(is.na(HM),0,HM), WGD = ifelse(is.na(WGD),0,WGD)) %>%
-  dplyr::arrange(-HM)
+  dplyr::mutate(fPCAWG = n / nPCAWG) %>%
+  dplyr::select(fPCAWG, f, is_HM, ttype)
 df_incidence$ttype = factor(df_incidence$ttype, levels=df_incidence$ttype)
 
-p = RES %>%
-  dplyr::group_by(ttype, is_HM) %>%
-  dplyr::summarise(n = n()) %>%
-  dplyr::ungroup() %>%
-  dplyr::group_by(ttype) %>%
-  dplyr::mutate(sn = sum(n)) %>%
-  dplyr::filter(is_HM %in% c("HM")) %>%
-  dplyr::mutate(f = n / sn) %>%
-  dplyr::arrange(-f) %>% 
-  ggplot(mapping = aes(x=reorder(ttype, f), y=f, fill=is_HM)) +
+p = df_incidence %>%
+  dplyr::select(ttype, fPCAWG, is_HM) %>%
+  dplyr::filter(is_HM == "HM") %>%
+  ggplot(mapping = aes(x=reorder(ttype, fPCAWG), y=fPCAWG, fill=is_HM)) +
   geom_bar(position="stack", stat="identity") +
   scale_fill_manual(values = class_colors) +
   theme_bw() +
@@ -151,15 +156,39 @@ p
 saveRDS(p, "plot/distribution_of_HM_fraction_per_ttype.rds")
 ggsave("plot/distribution_of_HM_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = p)
 
+# p = RES %>%
+#   dplyr::group_by(ttype, is_HM) %>%
+#   dplyr::summarise(n = n()) %>%
+#   dplyr::ungroup() %>%
+#   dplyr::group_by(ttype) %>%
+#   dplyr::mutate(sn = sum(n)) %>%
+#   dplyr::filter(is_HM %in% c("HM")) %>%
+#   dplyr::mutate(f = n / sn) %>%
+#   dplyr::arrange(-f) %>%
+#   ggplot(mapping = aes(x=reorder(ttype, f), y=f, fill=is_HM)) +
+#   geom_bar(position="stack", stat="identity") +
+#   scale_fill_manual(values = class_colors) +
+#   theme_bw() +
+#   coord_flip() +
+#   #scale_y_continuous(limits = c(0,.2)) +
+#   labs(x = "Tumour type", y="HM fraction") +
+#   theme(legend.position = "none")
+# p
+# saveRDS(p, "plot/distribution_of_HM_fraction_per_ttype.rds")
+# ggsave("plot/distribution_of_HM_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = p)
+
 p = df_incidence %>%
-  tidyr::pivot_longer(!ttype) %>%
-  ggplot(mapping = aes(x=ttype, y=value, fill=name)) +
-  geom_col(position = "dodge") +
-  coord_flip() +
-  theme_bw() +
+  dplyr::select(ttype, fPCAWG, is_HM) %>%
+  ggplot(mapping = aes(x=reorder(ttype, fPCAWG), y=fPCAWG, fill=is_HM)) +
+  geom_col(position="dodge") +
   scale_fill_manual(values = class_colors) +
-  labs(fill="") +
-  labs(x = "Incidence fraction", y="Tumour type")
+  theme_bw() +
+  coord_flip() +
+  #scale_y_continuous(limits = c(0,.2)) +
+  labs(x = "Tumour type", y="Incidence fraction") +
+  theme(legend.position = "none")
+p
+
 saveRDS(p, "plot/distribution_of_HM_and_WGD_fraction_per_ttype.rds")
 ggsave("plot/distribution_of_HM_and_WGD_fraction_per_ttype.pdf", width = 8, height = 8, units = "in", plot = p)
 
