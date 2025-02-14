@@ -17,30 +17,18 @@ rand_index_plot = plot_rand_index(res_clust)
 design = "
 A
 A
-B
-C
-C
-"
-
-design = "
 A
 B
 B
-B
-B
 C
 C
-D
-D
-D
-D
 "
 
-sim_plot = guide_area() + rand_index_plot + error_over_nmuts + error_over_clocks_and_muts + 
-  plot_layout(design = design, guides = "collect") +
-  plot_annotation(tag_levels = "A") &
+sim_plot = rand_index_plot + error_over_nmuts + error_over_clocks_and_muts +
+  plot_layout(design = design) +
+  plot_annotation(tag_levels = "a") &
   theme(
-    legend.position = "top",
+    legend.position = "bottom",
     plot.tag = element_text(face = "bold")
   )
 

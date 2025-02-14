@@ -43,6 +43,11 @@ RES = RES %>%
   #dplyr::mutate(is_HM = ifelse((wgd_status == "no_wgd") & any(n_chr_affected >= N_CHR), "HM", "Classic")) %>%
   na.omit()
 
+RES = RES %>%
+  dplyr::select(!c(n_chr_affected, clock_rank)) %>%
+  dplyr::group_by(sample_id) %>%
+  dplyr::distinct()
+
 # Check GENE in HM and non HM ####
 GENE = "NF1"
 gene_analysis_df = lapply(genes_of_interest, function(GENE) {
