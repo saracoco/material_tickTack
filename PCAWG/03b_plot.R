@@ -1,6 +1,6 @@
 # .libPaths(new="~/R/rstudio_v3/")
 
-rm(list = ls())
+# rm(list = ls())
 library(CNAqc)
 library(tickTack)
 library(dplyr)
@@ -15,31 +15,9 @@ library(mobster)
 source("../simulations_v2/utils_plot.R")
 
 
-# 1 cluster 
-# 0554ffe5-31f7-43f5-8372-2b73c9cf3527 no
-# 09497b9b-6fca-48cb-af97-161a3e434a51 no
-# 209a9b10-7129-48fe-a899-d14ba17efe6f si HM ma ploidy 3 
-# 8c5f9574-c622-11e3-bf01-24c6515278c0 si HM ma picco vaf nero 
-# ee368301-b2f7-428f-9330-67c054c1a09d si HM ma picco vaf nero
-# fc9ef456-75a2-5967-e040-11ac0c484477 no
-# 96a2896c-1e32-4827-a526-6b7104832f9a no
-# 
-# 
-09cb8bc5-13ac-44ac-9b7d-6de143373570 si WGD
-05616329-e7ba-4efd-87b1-d79cd0f7af3d classic 3 comp
-0bfd1068-3fdf-a95b-e050-11ac0c4860c3 classsic 4 comp
-
-# 2 cluster no wgd 
-# 28e81540-4744-4865-b627-c7c9d8a3c2b8 no
-# 28839c75-90a8-493f-b658-8c63e0ebd324 si bassa pi 0.4
-# 28e81540-4744-4865-b627-c7c9d8a3c2b8 no
-
-
-
-
-
-
-eg <- "2a8d63eb-0174-4213-9214-413f391f512c"
+eg_OV <- "2a8d63eb-0174-4213-9214-413f391f512c"
+eg_PRAD <- "0bfd1043-8180-e3e4-e050-11ac0c4860c5"
+eg <- eg_OV
 
 
 
@@ -49,9 +27,20 @@ name <- eg
 x_after_inference_PCAWG <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/", name, "/results/x_after_inference.rds"))
 res_model_selection <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/", name, "/results/results_model_selection.rds"))
 fit <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/", name, "/fit.rds"))
+x_after_inference_PCAWG_40 <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole_40mut_AIC/", name, "/results/x_after_inference.rds"))
+res_model_selection_40 <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole_40mut_AIC/", name, "/results/results_model_selection.rds"))
 
 fit$mutations <- fit$snvs
 
+OV <- CNAqc::plot_segments(fit_OV)
+PRAD <- CNAqc::plot_segments(fit_PRAD)
+
+ggplot2::ggsave("../../plot_paper_tickTack/OV_segments.pdf",height = 8,width = 20, plot=OV)
+
+
+
+
+x_after_inference_PCAWG <- x_after_inference_PCAWG_40
 # x_after_inference_sim$reference_genome <- "GRCh38"
 x_after_inference_PCAWG$reference_genome <- fit$reference_genome
 x_after_inference_PCAWG$cna_subclonal <- fit$cna_subclonal
@@ -67,7 +56,8 @@ x_after_inference_PCAWG$K = res_model_selection$best_K
 x <- x_after_inference_PCAWG
 results<-x$results_timing
 
-p2 <- merge_timing_and_segments(x)
+OV <- merge_timing_and_segments(x)
+ggplot2::ggsave("../../plot_paper_tickTack/OV_40.pdf",height = 8,width = 20, plot=OV)
 
 
 p1 <- merge_timing_and_segments(x)
