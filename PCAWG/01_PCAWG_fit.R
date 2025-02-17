@@ -1,6 +1,3 @@
-# tarfile <- "clonal_analysis_PCAWG.tar.gz"
-# data <- read.delim(file = untar(tarfile,compressed="gzip"),sep="\t")
-.libPaths(new="~/R/rstudio_v3/") 
 library(tickTack)
 library(dplyr)
 library(ggplot2)

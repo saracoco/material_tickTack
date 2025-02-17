@@ -12,11 +12,11 @@ ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public
   dplyr::select(sample_id, ttype) %>% 
   dplyr::distinct()
 
-results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
-fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
+results_path <- "/results_whole/"
+fits_path = "/data/clonal_analysis_PCAWG/"
 
-results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results/"
-fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
+results_path <- "/results/"
+fits_path = "/data/clonal_analysis_PCAWG/"
 
 IDs <- list.files(results_path)
 IDs = IDs[!grepl("single", IDs)]
@@ -48,8 +48,7 @@ RES$tumour_name %>% unique()
 
 RES %>% 
   dplyr::select(ttype, tumour_name) %>% 
-  dplyr::distinct() %>% 
-  print(n=100)
+  dplyr::distinct()
 
 # Add arm-level annotation
 
