@@ -4,11 +4,11 @@ library(dplyr)
 library(ggplot2)
 library(parallel)
 library(tibble)
-source("utils.R")
+source("../utils.R")
 
-data_path <-  "../../data/clonal_analysis_PCAWG/"
+data_path <-  "../../../data/clonal_analysis_PCAWG/"
 
-sample_path <- paste0(data_path,"950486ad-14f8-480a-b079-9cc3cd842090", "/fit.rds")
+sample_path <- paste0(data_path,"01658141-8398-4585-9f0f-8355dd9b0604", "/fit.rds")
 
 fit <- tryCatch(readRDS(sample_path), error = function(e) return(NULL))
 
@@ -25,7 +25,6 @@ x = list( mutations = fit$snvs, cna = fit$cna, metadata= tibble(purity=fit$purit
 x_fin = fit
 x_fin$mutations = fit$snvs
 x_fin$metadata = tibble(purity=fit$purity)
-
 
 x <- tickTack::fit_h(x_fin,
                      max_attempts=2,

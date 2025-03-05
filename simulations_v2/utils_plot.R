@@ -908,6 +908,10 @@ add_segments_to_plot = function(segments, base_plot, cn)
 
 plot_vaf = function(x, K){
 
+  
+  utils::globalVariables(c("..count.."))
+  
+  
   mutations <- x$mutations
   results <- x$results_timing
   reference_genome <- get_reference(x$reference_genome)
@@ -1021,7 +1025,7 @@ plot_vaf = function(x, K){
   PLOT_DATA = PLOT_DATA %>% dplyr::mutate(cluster = ifelse(cluster == "C2", "P1", "P2"))
   DENS = DENS %>% dplyr::mutate(cluster = ifelse(cluster == "C2", "P1", "P2"))
 
-  ggplot(PLOT_DATA, aes(VAF, fill = factor(tickTack_cl), y = after_stat(..count.. / tapply(..count.., PANEL, sum)[PANEL]))) +
+  ggplot(PLOT_DATA, aes(VAF, fill = factor(tickTack_cl), y = ggplot2::after_stat(.data$..count.. / tapply(.data$..count.., .data$PANEL, sum)[.data$PANEL]))) +
     geom_histogram(alpha = 0.5, color = NA, position = "identity", binwidth = binwidth) +
     geom_line(data = DENS, aes(y = y, x = x, linetype=factor(cluster)), size = .5) +
     scale_color_manual(values = COL) +

@@ -1,6 +1,3 @@
-# .libPaths(new="~/R/rstudio_v3/")
-
-# rm(list = ls())
 library(CNAqc)
 library(tickTack)
 library(dplyr)

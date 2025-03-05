@@ -1,3 +1,4 @@
+.libPaths(new="~/R/rstudio_v3/") 
 
 rm(list=ls())
 library(dplyr)
@@ -13,15 +14,20 @@ ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public
   dplyr::select(sample_id, ttype) %>% 
   dplyr::distinct()
 
-results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
+# results_path <- "/orfeo/scratch/cdslab/scocomello/material_tickTack/PCAWG/results_whole/"
+results_path <- "~/orfeo_disco/scratch/material_tickTack/PCAWG/results_whole/"
 
-fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
+# fits_path = "/orfeo/scratch/cdslab/scocomello/data/clonal_analysis_PCAWG/"
+fits_path <- "~/orfeo_disco/scratch/data/clonal_analysis_PCAWG/"
+
 
 IDs <- list.files(results_path)
 
+failed_inference <- list()
 RES <- lapply(IDs, function(id) {
   results_model_selection_path = paste0(results_path, id, "/results/results_model_selection.rds")
   if (!file.exists(results_model_selection_path)) {
+    failed_inference <<- append(failed_inference, id)
     print(paste0("Skipping sample id ", id))
     return(NULL)
   }
@@ -39,8 +45,15 @@ RES <- lapply(IDs, function(id) {
   dplyr::bind_cols(df, parse_summarized_results(results))
 }) %>% do.call("bind_rows", .)
 
-saveRDS(RES, "../../select_egsample_purity_.rds")
+print(failed_inference)
 
+failed_inference <- failed_inference %>% unlist
+
+saveRDS(failed_inference, "./data/failed_inference.rds")
+
+
+
+saveRDS(RES, "../../select_egsample_purity_.rds")
 RES <- readRDS("/orfeo/cephfs/scratch/cdslab/scocomello/select_egsample_purity_.rds")
 
 filtered_res <- RES %>%

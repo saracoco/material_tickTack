@@ -16,7 +16,7 @@ grad_samples = 10
 elbo_samples = 100
 min_mutations_number = 10
 
-vector_names <- readRDS("/data/fittable_samples.RDS")
+vector_names <- readRDS("segments_analysis/data/failed_inference.rds")
 num_files <- length(vector_names)
 
 chunk_size <- ceiling(num_files / total_chunks)
@@ -30,15 +30,15 @@ message(sprintf("Processing files %d to %d out of %d", start_index, end_index, n
 process_file <- function(s) {
   tryCatch({
     print(s)
-    fit <- readRDS(paste0("",s,"/fit.rds"))
+    fit <- readRDS(paste0("../../data/clonal_analysis_PCAWG/",s,"/fit.rds"))
     original_dir <- getwd()
 
     print(s)
 
 
     name <- basename(s)   
-    dir.create(file.path(original_dir, paste0("results_whole/",name)), showWarnings = TRUE)
-    new_dir = paste0(original_dir, paste0("/results_whole/",name))
+    dir.create(file.path(original_dir, paste0("results_whole_check_fails/",name)), showWarnings = TRUE)
+    new_dir = paste0(original_dir, paste0("/results_whole_check_fails/",name))
     dir.create(file.path(new_dir, paste0("results")), showWarnings = TRUE)
     dir.create(file.path(new_dir, paste0("plots")), showWarnings = TRUE)
 
@@ -66,7 +66,7 @@ process_file <- function(s) {
     saveRDS(results_model_selection, paste0(new_dir,"/results/results_model_selection.rds"))
 
     summarized_results <- results_model_selection$best_fit$summarized_results
-    saveRDS(summarized_results, paste0("results/",name,".rds"))
+    saveRDS(summarized_results, paste0("results_check_fails/",name,".rds"))
 
     best_K <- results_model_selection$best_K
     model_selection_tibble <- results_model_selection$model_selection_tibble
@@ -116,7 +116,7 @@ process_file <- function(s) {
     saveRDS(results_single, paste0(new_dir, "/results/results_single.rds"))
 
     result_tibble_single <- results_single$summarized_results
-    saveRDS(result_tibble_single, paste0("results/",name,"_result_tibble_single.rds"))
+    saveRDS(result_tibble_single, paste0("results_check_fails/",name,"_result_tibble_single.rds"))
 
     p <- tickTack::plot_timing(results_single, segments, colour_by = "karyotype")
     ggsave(paste0(new_dir,"/plots/plot_timing.png"),plot = p, , width = 25, height = 5)
@@ -131,3 +131,4 @@ process_file <- function(s) {
 }
 
 parallel::mclapply(chunk_files, process_file, mc.cores = (detectCores()-1) )
+lapply(chunk_files[1:3], process_file)

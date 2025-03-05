@@ -22,20 +22,20 @@ classify_segment = function(s, data){
   segment = data[s,]
   print(segment)
   if (segment$chr %in% chromosomes_table$chr){
-  targeted_chr =  chromosomes_table %>% filter(chr == segment$chr) 
-  segment %>% mutate(len= to-from) %>% mutate(
-    class = case_when(
-      ## Amplifications 
-      # whole chromosome : the CNA involves more than 80% of the total length of the chromosome
-      len >= targeted_chr$length * .8 ~ 'whole_chromosome',
-      # p-arm : The CNA is on the p-arm and involves more than 80% of its length
-      (from + targeted_chr$from < targeted_chr$centromerStart ) & (len >= targeted_chr$p_arm_length * .8) ~ 'p_arm',
-      # q-arm : The CNA is on the q-arm and involves more than 80% of its length
-      (from + targeted_chr$from > targeted_chr$centromerEnd)  & (len >= targeted_chr$q_arm_length * .8) ~ 'q_arm',
-      # focal : The CNA is on one arm and involves less than 80% of its length
-      .default = 'focal'
+    targeted_chr =  chromosomes_table %>% filter(chr == segment$chr) 
+    segment %>% mutate(len= to-from) %>% mutate(
+      class = case_when(
+        ## Amplifications 
+        # whole chromosome : the CNA involves more than 80% of the total length of the chromosome
+        len >= targeted_chr$length * .8 ~ 'whole_chromosome',
+        # p-arm : The CNA is on the p-arm and involves more than 80% of its length
+        (from + targeted_chr$from < targeted_chr$centromerStart ) & (len >= targeted_chr$p_arm_length * .8) ~ 'p_arm',
+        # q-arm : The CNA is on the q-arm and involves more than 80% of its length
+        (from + targeted_chr$from > targeted_chr$centromerEnd)  & (len >= targeted_chr$q_arm_length * .8) ~ 'q_arm',
+        # focal : The CNA is on one arm and involves less than 80% of its length
+        .default = 'focal'
+      )
     )
-  )
   }else{
     segment$class = NA
   }
@@ -189,8 +189,8 @@ for (t in res_processed$ttype %>% unique()){
 
 all_scores = all_scores %>% rowwise() %>% 
   mutate(
-  first_driver = paste0(strsplit(strsplit(first_driver, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(first_driver, ':')[[1]][2],'_')[[1]][1]),
-  second_driver = paste0(strsplit(strsplit(second_driver, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(second_driver, ':')[[1]][2],'_')[[1]][1])
+    first_driver = paste0(strsplit(strsplit(first_driver, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(first_driver, ':')[[1]][2],'_')[[1]][1]),
+    second_driver = paste0(strsplit(strsplit(second_driver, 'chr')[[1]][2], ':')[[1]][1],strsplit(strsplit(second_driver, ':')[[1]][2],'_')[[1]][1])
   ) 
 write.csv(all_scores, 'data/arm_scores.csv')
 
@@ -206,7 +206,7 @@ all_scores %>%  dplyr::filter(p.value <= .1) %>%
   theme(
     #axis.text.x = element_text(angle= 45, hjust=1)
   )
-  #ggtitle(tumour_type)
+#ggtitle(tumour_type)
 
 
 ggsave(paste0("plot/matrices/arm_events.png"), width = 10, height =10, units="in", dpi=300)
@@ -354,24 +354,24 @@ genes = Reduce(rbind, genes)
 pdf("plot/circos_plot.pdf", width = 8, height = 8)
 sectors <- c(all_scores$first_driver %>% unique(), all_scores$second_driver %>% unique()) %>% unique() %>% sort()
 values = lapply(sectors, function(c){
-    if (grepl('p',c)){
-      chromosome = strsplit(c, 'p')[[1]][1]
-      arm='p'
-      len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerStart)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
-    }
-    if (grepl('q',c)){
-      chromosome = strsplit(c, 'q')[[1]][1]
-      arm='q'
-      len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerEnd))
-    }
-    if (grepl('whole',c)){
-      chromosome = strsplit(c, 'whole')[[1]][1]
-      arm='whole'
-      len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
-    }
-    data.frame('sector'= c,'value'=len)
-    #CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) 
-  }) #%>% Reduce(rbind)
+  if (grepl('p',c)){
+    chromosome = strsplit(c, 'p')[[1]][1]
+    arm='p'
+    len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerStart)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
+  }
+  if (grepl('q',c)){
+    chromosome = strsplit(c, 'q')[[1]][1]
+    arm='q'
+    len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(centromerEnd))
+  }
+  if (grepl('whole',c)){
+    chromosome = strsplit(c, 'whole')[[1]][1]
+    arm='whole'
+    len = (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(to)) - (CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) %>% pull(from))
+  }
+  data.frame('sector'= c,'value'=len)
+  #CNAqc:::get_reference('hg19') %>% filter(chr==paste0('chr',chromosome)) 
+}) #%>% Reduce(rbind)
 values = Reduce(rbind,values)
 
 values$value_scaled <- values$value / sum(values$value)
@@ -402,13 +402,13 @@ circos.labels(genes_scaled$arm,
 
 # Create sector tracks with labels
 circos.trackPlotRegion(factors = df$sector, ylim = c(0, 1), 
-                         panel.fun = function(x, y) {
-                           sector.name <- get.cell.meta.data("sector.index")
-                           xcenter <- mean(get.cell.meta.data("xlim"))
-                           circos.text(xcenter, 0.3, sector.name, facing = "inside", niceFacing = TRUE)
-                         },
-                         bg.border = rep("grey94", nrow(df)),
-                         bg.col = rep("grey94", nrow(df)))
+                       panel.fun = function(x, y) {
+                         sector.name <- get.cell.meta.data("sector.index")
+                         xcenter <- mean(get.cell.meta.data("xlim"))
+                         circos.text(xcenter, 0.3, sector.name, facing = "inside", niceFacing = TRUE)
+                       },
+                       bg.border = rep("grey94", nrow(df)),
+                       bg.col = rep("grey94", nrow(df)))
 
 # for (e in all_events){
 #   
@@ -473,38 +473,38 @@ color =
 legend(1,1, legend=names(color), fill=color)
 
 for (i in 1:nrow(all_scores)){
-    first = all_scores$first_driver[i]
-    second = all_scores$second_driver[i]
-    t = all_scores$type[i]
-    if (all_scores$score[i] < 0){
-      # Ribbon
-      circos.link(first,
-                  c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)),
-                  second,
-                  c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)),
-                  col = fill[t], border = color[t], directional = 1, arr.length = 0.1,arr.type = 'big.arrow')
-      # Arrow
-      # circos.link(first, #median(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
-      #             second, 
-      #             lwd = 2,h=0.5,l=0.5,#median(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
-      #             col = color[t], border = color[t], directional = 1, arr.length = 0.5)
-    }else{
-      # Ribbon
-      circos.link(first,
-                  c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)),
-                  second,
-                  c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)),
-                  col = fill[t], border = color[t], directional = -1, arr.length = 0.1,arr.type = 'big.arrow')
-      # Arrow
-      # circos.link(first, #median(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
-      #             second, 
-      #             lwd = 2,h=0.5,l=0.5, #median(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
-      #             col = color[t], border = color[t], directional = -1, arr.length = 0.5)
-    }
-    
- 
-    
-     }
+  first = all_scores$first_driver[i]
+  second = all_scores$second_driver[i]
+  t = all_scores$type[i]
+  if (all_scores$score[i] < 0){
+    # Ribbon
+    circos.link(first,
+                c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)),
+                second,
+                c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)),
+                col = fill[t], border = color[t], directional = 1, arr.length = 0.1,arr.type = 'big.arrow')
+    # Arrow
+    # circos.link(first, #median(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
+    #             second, 
+    #             lwd = 2,h=0.5,l=0.5,#median(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
+    #             col = color[t], border = color[t], directional = 1, arr.length = 0.5)
+  }else{
+    # Ribbon
+    circos.link(first,
+                c(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)),
+                second,
+                c(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)),
+                col = fill[t], border = color[t], directional = -1, arr.length = 0.1,arr.type = 'big.arrow')
+    # Arrow
+    # circos.link(first, #median(df %>% filter(sector == first) %>% pull(start), df %>% filter(sector == first) %>% pull(end)), 
+    #             second, 
+    #             lwd = 2,h=0.5,l=0.5, #median(df %>% filter(sector == second) %>% pull(start), df %>% filter(sector == second) %>% pull(end)), 
+    #             col = color[t], border = color[t], directional = -1, arr.length = 0.5)
+  }
+  
+  
+  
+}
 
 # Clear the Circos plot
 circos.clear()
@@ -513,4 +513,3 @@ dev.off()
 
 
 
-  
