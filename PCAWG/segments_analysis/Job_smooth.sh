@@ -11,7 +11,7 @@
 
 module load R/4.4.1
 
-R CMD BATCH 00_smoothing.R
+R CMD BATCH 00_plot.R
 
 module purge
 

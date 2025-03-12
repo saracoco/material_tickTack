@@ -42,11 +42,13 @@ is_fittable = function(fit, possible_k = c("2:1", "2:2", "2:0"), alpha = .05, mi
     
     peaks <- get_clonal_peaks(k, purity)
     
-    if (k %in% possible_k) {
+    if (k %in% possible_k & (segment$to-segment$from)>1e6) {
       # Get info for mutations
       segment_mutations <- mutations %>%
         dplyr::filter(chr == segment$chr,.data$from > segment$from, .data$to < segment$to) %>%
         tidyr::drop_na(DP)
+      
+      
       
       accepted_mutations <- data.frame()
       if (nrow(segment_mutations) > 0) {
