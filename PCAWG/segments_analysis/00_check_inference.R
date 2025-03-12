@@ -8,20 +8,19 @@ source("../utils.R")
 
 data_path <-  "../../../data/clonal_analysis_PCAWG/"
 
-sample_path <- paste0(data_path,"01658141-8398-4585-9f0f-8355dd9b0604", "/fit.rds")
-
-fit <- tryCatch(readRDS(sample_path), error = function(e) return(NULL))
-
 tolerance = 0.0001
 initial_iter = 200
 grad_samples = 10
 elbo_samples = 100
 min_mutations_number = 10
+set.seed(seed = 123)
 
 
+sample_path <- paste0(data_path,"01658141-8398-4585-9f0f-8355dd9b0604", "/fit.rds")
 
-x = list( mutations = fit$snvs, cna = fit$cna, metadata= tibble(purity=fit$purity))
+fit <- tryCatch(readRDS(sample_path), error = function(e) return(NULL))
 
+# x = list( mutations = fit$snvs, cna = fit$cna, metadata= tibble(purity=fit$purity))
 x_fin = fit
 x_fin$mutations = fit$snvs
 x_fin$metadata = tibble(purity=fit$purity)
@@ -80,4 +79,4 @@ ggsave(paste0(new_dir,"/plots/plot_timing_all_K_h.png"),plot = plot_model_select
 
 source("../../tickTack/R/plot_cnaqc.R")
 
-merge_timing_and_segments(x)
+tickTack::plot_cnaqc(x)

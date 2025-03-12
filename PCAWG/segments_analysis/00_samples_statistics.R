@@ -1,12 +1,12 @@
-.libPaths(new="~/R/rstudio_v3/") 
 rm(list=ls())
+.libPaths(new="~/R/rstudio_v3/") 
 library(dplyr)
 library(ggplot2)
 library(parallel)
 library(tibble)
-source("utils.R")
+source("../utils.R")
 
-data_path <-  "../../data/clonal_analysis_PCAWG"
+data_path <-  "../../../data/clonal_analysis_PCAWG"
 
 sample_files = list.files(data_path, full.names = "T")
 
@@ -49,16 +49,16 @@ for (i in c(5e5, 1e6, 1e7)) {
     
     n_mutations_per_segment <- lapply(1:(length(cna_simple)), function(segment_idx) {
       
-    
+      
       segment <- cna_simple[segment_idx, ]
       chr <- segment$chr                                            
       segment_id <- paste(chr, segment$from, segment$to, sep = "_")
       k <- segment$k
       
       segment_mutations <- cnaqc_x$mutations %>%
-          dplyr::filter(chr == segment$chr,.data$from > segment$from, .data$to < segment$to) %>%
-          tidyr::drop_na(DP)
-          
+        dplyr::filter(chr == segment$chr,.data$from > segment$from, .data$to < segment$to) %>%
+        tidyr::drop_na(DP)
+      
       n_mutations = tryCatch(
         nrow(segment_mutations), 
         error = function(e) as.character(NA)
@@ -90,19 +90,8 @@ for (i in c(5e5, 1e6, 1e7)) {
     
   }) %>% bind_rows()
   
-  saveRDS(info_segments, paste0("info_segments_", i, ".rds"))
+  saveRDS(info_segments, paste0("./data/info_segments_", i, ".rds"))
 }
 
 # Clean up parallel workers
 plan(sequential)
-
-
-
-# fittable_flags %>% sum()
-# fittable_paths <- sample_files[fittable_flags]
-# saveRDS(fittable_paths, "data/fittable_samples_smoothed_10mm.RDS")
-
-
-
-
-

@@ -44,7 +44,7 @@ ggplot(info_segments, aes(x = n_cna_simple, y = median_length)) +
     plot.background = element_rect(fill = "white")  # White background for the whole plot
   )
 
-ggsave(paste0("scatter_plot_with_counts_",smoothing,".png"), width = 10, height = 8, dpi = 300)
+ggsave(paste0("./plot/scatter_plot_with_counts_",smoothing,".png"), width = 10, height = 8, dpi = 300)
 
 
 
@@ -70,7 +70,7 @@ ggplot(info_segments_binned, aes(x = bin, y = mean_mutation_number)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         panel.background = element_rect(fill = "white"),  # White background for the panels
         plot.background = element_rect(fill = "white") )  # Rotate x-axis labels for readability
-ggsave(paste0("mutations_per_segment_all_",smoothing,".png"), width = 10, height = 8, dpi = 300)
+ggsave(paste0("./plot/mutations_per_segment_all_",smoothing,".png"), width = 10, height = 8, dpi = 300)
 
 
 # faceting by type
@@ -127,8 +127,8 @@ plot2 <- plot_histogram(info_segments_binned_2, "Group 2")
 plot1
 plot2
 
-ggsave(paste0("mutations_per_segment_per_type_",smoothing,"_1.png"), width = 20, height = 12, dpi = 300, plot=plot1)
-ggsave(paste0("mutations_per_segment_per_type_",smoothing,"_2.png"), width = 20, height = 12, dpi = 300, plot=plot2)
+ggsave(paste0("./plot/mutations_per_segment_per_type_",smoothing,"_1.png"), width = 20, height = 12, dpi = 300, plot=plot1)
+ggsave(paste0("./plot/mutations_per_segment_per_type_",smoothing,"_2.png"), width = 20, height = 12, dpi = 300, plot=plot2)
 
 
 
