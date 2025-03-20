@@ -1,11 +1,15 @@
+.libPaths(new="~/R/rstudio_v3/") 
+
+rm(list= ls())
 library(ggplot2)
 library(dplyr)
-smoothing = "1e+06"
+smoothing = "5+e05"
 
-info_segments <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/info_segments_",smoothing,".rds"))
+info_segments <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/segments_analysis/data/info_segments_",smoothing,".rds"))
 info_segments
 
-
+fittable_samples <- readRDS(paste0("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/PCAWG/data/fittable_samples.RDS")) #fittable_samples_5Mb_smoothed_15mm_0.4pi
+info_segments <- info_segments %>% filter(sample %in% basename(fittable_samples))
 #plot 1
 # Count the number of rows per type
 type_counts <- info_segments %>%
@@ -20,11 +24,12 @@ info_segments <- info_segments %>%
 # Calculate the median of median_length per type
 median_per_type <- info_segments %>%
   group_by(facet_label) %>%
-  summarise(median_length = median(median_length, na.rm = TRUE), .groups = 'drop')
+  summarise(median_length = median(median_length, na.rm = TRUE), .groups = 'drop') 
+
 
 # Create the plot
 ggplot(info_segments, aes(x = n_cna_simple, y = median_length)) +
-  geom_point(size = 1, alpha = 0.7, color = "blue") +  # Scatter points
+  geom_point(size = 0.4, alpha = 0.7, color = "blue") +  # Scatter points
   facet_wrap(~ facet_label) +  # Facet by type with row counts
   geom_hline(data = median_per_type, aes(yintercept = median_length), 
              color = "red", linetype = "dashed", linewidth = 0.6) +  # Add median line
@@ -39,12 +44,12 @@ ggplot(info_segments, aes(x = n_cna_simple, y = median_length)) +
   ) +
   theme_minimal() +  # Clean theme
   theme(
-    strip.text = element_text(size = 12, face = "bold"),  # Style facet labels
+    strip.text = element_text(size = 10, face = "bold"),  # Style facet labels
     panel.background = element_rect(fill = "white"),  # White background for the panels
     plot.background = element_rect(fill = "white")  # White background for the whole plot
   )
 
-ggsave(paste0("./plot/scatter_plot_with_counts_",smoothing,".png"), width = 10, height = 8, dpi = 300)
+ggsave(paste0("./plot/scatter_plot_with_counts_",smoothing,".pdf"), width = 10, height = 8, dpi = 300)
 
 
 
@@ -52,7 +57,7 @@ ggsave(paste0("./plot/scatter_plot_with_counts_",smoothing,".png"), width = 10, 
 
 
 # plot 2
-l <- 10 
+l <- 10
 info_segments_binned <- info_segments %>%
   mutate(bin = cut_number(median_length, n = l)) %>%
   group_by(bin) %>%
@@ -66,6 +71,7 @@ ggplot(info_segments_binned, aes(x = bin, y = mean_mutation_number)) +
     title = paste("Histogram of Median Mutation Number (", l, "Bins)", sep = ""),
     caption = paste0("Max_distance applied in the CNAqc smoothing function:",smoothing)
   ) +
+  geom_text(aes(label = round(mean_mutation_number,2)), vjust = -0.3, size = 3) +  # Add labels on top of bars
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         panel.background = element_rect(fill = "white"),  # White background for the panels
@@ -96,6 +102,7 @@ bin_data <- function(df, types) {
 
 # Generate data for each group
 info_segments_binned_1 <- bin_data(info_segments, types_group1)
+types_group2 <- types_group2[(types_group2!= "DLBC") & (types_group2!= "KICH") &  (types_group2!="LIHC") & (types_group2!="READ")]
 info_segments_binned_2 <- bin_data(info_segments, types_group2)
 
 # Function to plot the data with value labels
@@ -132,6 +139,197 @@ ggsave(paste0("./plot/mutations_per_segment_per_type_",smoothing,"_2.png"), widt
 
 
 
+
+# karyotype distribution 
+library(ggplot2)
+library(dplyr)
+library(forcats) 
+
+info_karyo <- readRDS("./data/info_complex_segments_5e+06.rds")
+df <- info_karyo
+
+percentage_threshold <- 0.01 
+df %>%
+  filter(karyotype != "1:1") %>% 
+  count(karyotype) %>%
+  mutate(percent = n / sum(n)) %>%  
+  filter(percent >= percentage_threshold) %>%  
+  ggplot(aes(y = fct_reorder(karyotype, n), x = n, fill = karyotype)) +
+  geom_bar(stat = "identity") +
+  theme_classic(base_size = 14) + 
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  labs(title = "Karyotype Distribution (Filtered by Percentage (> 0.01), Excluding 1:1)",
+       y = "Karyotype",
+       x = "Count") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(title = "Karyotype"))
+ggsave(paste0("./plot/Overall_distribution_of_karyotypes_",smoothing,".png"), width = 20, height = 12, dpi = 300)
+
+# percent 
+df %>%
+  filter(karyotype != "1:1") %>% 
+  count(karyotype) %>%
+  mutate(percent = n / sum(n)) %>%  
+  filter(percent >= percentage_threshold) %>%  
+  ggplot(aes(y = fct_reorder(karyotype, percent), x = percent, fill = karyotype)) +
+  geom_bar(stat = "identity") +
+  theme_classic(base_size = 14) + 
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  labs(title = "Karyotype Distribution (Filtered by Percentage (> 0.01), Excluding 1:1)",
+       y = "Karyotype",
+       x = "Count") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(title = "Karyotype"))
+ggsave(paste0("./plot/Overall_distribution_of_karyotypes_percent_",smoothing,".png"), width = 20, height = 12, dpi = 300)
+
+
+
+# per tumour Type
+# count
+percentage_threshold <- 0.06
+df %>%
+  filter(karyotype != "1:1") %>%  
+  count(type, karyotype) %>%
+  group_by(type) %>%
+  mutate(percent = n / sum(n)) %>% 
+  filter(percent >= percentage_threshold) %>% 
+  ungroup() %>%
+  ggplot(aes(x = fct_reorder(karyotype, n), y = n, fill = karyotype)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~type, scales = "free_y") +
+  coord_flip() +
+  theme_classic(base_size = 14) +  # White background
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  labs(title = paste0("Karyotype Distribution Across Tumour Types (Filtered, Excluding 1:1, percentage > ", percentage_threshold, " )"),
+       x = "Karyotype",
+       y = "Count") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(title = "Karyotype"))  
+ggsave(paste0("./plot/Per_tumour_distribution_of_karyotypes_",smoothing,".png"), width = 20, height = 12, dpi = 300)
+
+
+# percent
+percentage_threshold <- 0.06
+df %>%
+  filter(karyotype != "1:1") %>%  
+  count(type, karyotype) %>%
+  group_by(type) %>%
+  mutate(percent = n / sum(n)) %>% 
+  filter(percent >= percentage_threshold) %>% 
+  ungroup() %>%
+  ggplot(aes(x = fct_reorder(karyotype, percent), y = percent, fill = karyotype)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~type, scales = "free_y") +
+  coord_flip() +
+  theme_classic(base_size = 14) +  # White background
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  labs(title = paste0("Karyotype Distribution Across Tumour Types (Filtered, Excluding 1:1, percentage > ", percentage_threshold, " )"),
+       x = "Karyotype",
+       y = "Count") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(title = "Karyotype")) +
+  geom_text(aes(label = n), position = position_stack(vjust = 0.5), size = 3, color = "white") +
+  # Add the total number of samples per tumor type
+  geom_text(data = df %>%
+    filter(karyotype != "1:1") %>%
+    group_by(type) %>%
+    summarise(total_samples = n_distinct(sample)),  # Count distinct samples
+    aes(x = 1, y = 0, label = paste("N:", total_samples)), 
+    inherit.aes = FALSE, 
+    size = 3, 
+    hjust = -3, 
+    vjust = 0, 
+    color = "black")  # Add total sample count
+ggsave(paste0("./plot/Per_tumour_distribution_of_karyotypes_percent_",smoothing,".png"), width = 20, height = 12, dpi = 300)
+
+
+
+
+
+
+
+
+
+# distribution of 3 most common karyotypes per samples
+percentage_threshold <- 0.05
+
+# Step 1: Count occurrences of each karyotype per sample
+top_karyotypes_per_sample <- df %>%
+  filter(karyotype != "1:1") %>%  
+  group_by(sample, karyotype, type) %>%
+  summarise(count = n(), .groups = "drop")  # Count the occurrences of each karyotype per sample
+
+# Step 2: Calculate frequency for each karyotype within each sample
+top_karyotypes_per_sample <- top_karyotypes_per_sample %>%
+  group_by(sample) %>%
+  mutate(frequency = count / sum(count)) %>%  # Calculate frequency for each karyotype
+  ungroup()
+
+# Step 3: Get the top 3 most frequent karyotypes for each sample
+top_3_karyotypes <- top_karyotypes_per_sample %>%
+  group_by(sample) %>%
+  slice_max(order_by = count, n = 3, with_ties = TRUE) %>%  # Select top 3 by count (or frequency)
+  ungroup()
+
+
+
+percentage_threshold <- 0.01 
+top_3_karyotypes %>%
+  filter(karyotype != "1:1") %>% 
+  count(karyotype) %>%
+  mutate(percent = n / sum(n)) %>%  
+  filter(percent >= percentage_threshold) %>%  
+  ggplot(aes(y = fct_reorder(karyotype, n), x = n, fill = karyotype)) +
+  geom_bar(stat = "identity") +
+  theme_classic(base_size = 14) + 
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  labs(title = "Karyotype Distribution (Filtered by Percentage (> 0.01), Excluding 1:1)",
+       y = "Karyotype",
+       x = "Count") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(title = "Karyotype"))
+ggsave(paste0("./plot/3_Most_common_distribution_of_karyotypes_",smoothing,".png"), width = 20, height = 12, dpi = 300)
+
+
+
+percentage_threshold <- 0.05
+df %>%
+  filter(karyotype != "1:1") %>%  
+  count(type, karyotype) %>%
+  group_by(type) %>%
+  mutate(percent = n / sum(n)) %>% 
+  filter(percent >= percentage_threshold) %>% 
+  ungroup() %>%
+  ggplot(aes(x = fct_reorder(karyotype, percent), y = percent, fill = karyotype)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~type, scales = "free_y") +
+  coord_flip() +
+  theme_classic(base_size = 14) +  # White background
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  labs(title = paste0("Karyotype Distribution Across Tumour Types (Filtered, Excluding 1:1, percentage > ", percentage_threshold, " )"),
+       x = "Karyotype",
+       y = "Count") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(title = "Karyotype")) +
+  geom_text(aes(label = n), position = position_stack(vjust = 0.5), size = 3, color = "white") +
+  # Add the total number of samples per tumor type
+  geom_text(data = df %>%
+              filter(karyotype != "1:1") %>%
+              group_by(type) %>%
+              summarise(total_samples = n_distinct(sample)),  # Count distinct samples
+            aes(x = 1, y = 0, label = paste("N:", total_samples)), 
+            inherit.aes = FALSE, 
+            size = 3, 
+            hjust = -3, 
+            vjust = 0, 
+            color = "black")  # Add total sample count
+ggsave(paste0("./plot/3_Most_common_distribution_Per_tumour_",smoothing,".png"), width = 20, height = 12, dpi = 300)
 
 
 

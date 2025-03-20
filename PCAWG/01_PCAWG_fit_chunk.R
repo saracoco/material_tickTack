@@ -21,7 +21,7 @@ elbo_samples = 100
 min_mutations_number = 10
 max_distance_CNAqc = 1e6
 
-vector_names <- readRDS("./data/fittable_samples_1Mb_smoothed_10mm.RDS")
+vector_names <- readRDS("./data/fittable_samples_5Mb_smoothed_15mm_0.4pi.RDS")
 num_files <- length(vector_names)
 chunk_size <- ceiling(num_files / total_chunks)
 start_index <- (chunk_id - 1) * chunk_size + 1
