@@ -11,9 +11,8 @@ b_model = suppressWarnings(branching_evolution(starting, karyotype_1, karyotype_
 first_child = karyotype_1
 second_child = karyotype_2
 
-
-
 l1_model = NULL
-if((grepl("0", karyotype_1) & grepl("0", karyotype_2)) | !grepl("0", karyotype_1))
+if ((grepl("0", karyotype_1) & grepl("0", karyotype_2)) | !grepl("0", karyotype_1)){
   l1_model = suppressWarnings(linear_evolution(starting, karyotype_1, karyotype_2, CCF_1, purity)) %>%
   Reduce(f = bind_rows)
+}
