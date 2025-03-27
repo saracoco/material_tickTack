@@ -35,28 +35,51 @@ for (i.iter in 1:10) {
   
   sim = simulate_dataset(n_events, n_clocks, n_mutations, pi, coverage, sigma_tau = .01, min_dist = epsilon)
   
-  res_AmpTimeR <- fit_AmpTimeR(sim)
-  res_MutTime <- fit_MutTimeR(sim, pi)
-  res_tickTack_single <- fit_tickTack_single(sim, pi, MIN_MUTATIONS)
-  res_tickTack_h <- fit_tickTack_h(sim, pi, MIN_MUTATIONS, INIT = TRUE, tolerance = tolerance, max_attempts = max_attempts)
+  # Define the log file
+  error_log <- file(paste0(sub_dir, "/error_log.txt"), open = "wt")
   
-  # Merge results
-  merged_res = dplyr::tibble(
-    segment_idx = res_AmpTimeR$segment_idx,
-    true_tau = sim$true_taus,
-    true_tau_cluster = sim$taus_clust,
-    tau_AmpTimeR = res_AmpTimeR$tau,
-    tau_MutTimeR = res_MutTime$cn_timed$time,
-    tau_tickTack = res_tickTack_single$summarized_results$tau_mean,
-    tau_tickTack_h = res_tickTack_h$results_model_selection$best_fit$summarized_results$clock_mean
-  )
+  # Function to safely run and catch errors
+  safe_run <- function(expr, name) {
+    tryCatch(
+      expr,
+      error = function(e) {
+        msg <- paste(Sys.time(), "-", name, "failed with error:", e$message, "\n")
+        writeLines(msg, error_log)
+        return(NULL)
+      }
+    )
+  }
   
+  # Run fits and catch errors
+  res_AmpTimeR <- safe_run(fit_AmpTimeR(sim), "fit_AmpTimeR")
+  res_MutTime  <- safe_run(fit_MutTimeR(sim, pi), "fit_MutTimeR")
+  res_tickTack_single <- safe_run(fit_tickTack_single(sim, pi, MIN_MUTATIONS), "fit_tickTack_single")
+  res_tickTack_h <- safe_run(fit_tickTack_h(sim, pi, MIN_MUTATIONS, INIT = TRUE, tolerance = tolerance, max_attempts = max_attempts), "fit_tickTack_h")
+  
+  # Check if any result is NULL before merging
+  if (!is.null(res_AmpTimeR) && !is.null(res_MutTime) && !is.null(res_tickTack_single) && !is.null(res_tickTack_h)) {
+    merged_res <- dplyr::tibble(
+      segment_idx = res_AmpTimeR$segment_idx,
+      true_tau = sim$true_taus,
+      true_tau_cluster = sim$taus_clust,
+      tau_AmpTimeR = res_AmpTimeR$tau,
+      tau_MutTimeR = res_MutTime$cn_timed$time,
+      tau_tickTack = res_tickTack_single$summarized_results$tau_mean,
+      tau_tickTack_h = res_tickTack_h$results_model_selection$best_fit$summarized_results$clock_mean
+    )
+    
+    saveRDS(merged_res, paste0(sub_dir, "/merged_res.rds"))
+  }
+  
+  # Save simulation results
   saveRDS(sim, paste0(sub_dir, "/sim.rds"))
-  saveRDS(merged_res, paste0(sub_dir, "/merged_res.rds"))
-  saveRDS(res_AmpTimeR, paste0(sub_dir, "/res_AmpTimeR.rds"))
-  saveRDS(res_MutTime, paste0(sub_dir, "/res_MutTime.rds"))
-  saveRDS(res_tickTack_single, paste0(sub_dir, "/res_tickTack_single.rds"))
-  saveRDS(res_tickTack_h, paste0(sub_dir, "/res_tickTack_h.rds"))
+  if (!is.null(res_AmpTimeR)) saveRDS(res_AmpTimeR, paste0(sub_dir, "/res_AmpTimeR.rds"))
+  if (!is.null(res_MutTime)) saveRDS(res_MutTime, paste0(sub_dir, "/res_MutTime.rds"))
+  if (!is.null(res_tickTack_single)) saveRDS(res_tickTack_single, paste0(sub_dir, "/res_tickTack_single.rds"))
+  if (!is.null(res_tickTack_h)) saveRDS(res_tickTack_h, paste0(sub_dir, "/res_tickTack_h.rds"))
+  
+  # Close the error log file
+  close(error_log)
 }
 
 
