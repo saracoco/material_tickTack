@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=THIN
+#SBATCH --partition=EPYC
 #SBATCH --account=cdslab
 #SBATCH --job-name=sim_tickTack
 #SBATCH --nodes=1
@@ -9,7 +9,7 @@
 #SBATCH --time=48:00:00
 #SBATCH --output=out/%a
 #SBATCH --error=err/%a
-#SBATCH --array=1-540
+#SBATCH --array=1-1500
 
 module load R
 echo $SLURM_ARRAY_TASK_ID
@@ -24,7 +24,7 @@ max_attempts=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$7; exit }" params
 seed=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$8; exit }" params_config.txt)
 n_mutations=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$9; exit }" params_config.txt)
 
-awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print ; exit }" params_config.txt >> tickTack_sim_${n_clocks}_${n_events}_${purity}_${coverage}/config
+awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print ; exit }" params_config_reviews_1.txt >> tickTack_sim_1_${n_clocks}_${n_events}_${purity}_${coverage}/config
 
 echo $n_clocks
 echo $n_events
