@@ -1,3 +1,4 @@
+rm(list=ls())
 .libPaths("~/R/rstudio_v3/")
 library(AmplificationTimeR)
 library(dpclust3p)
@@ -12,9 +13,12 @@ sim <- readRDS("/orfeo/cephfs/scratch/cdslab/scocomello/material_tickTack/simula
 
 
 muts <- sim$muts
-cn <- sim$cn 
+cn <- sim$cn%>% 
+  mutate(CHR = chr, START=startpos)%>%
+  dplyr::select("CHR","START","nMaj1_A","nMin1_A")
 purity <- 0.1
 ploidy = 2
+
 
 
 
@@ -88,13 +92,28 @@ write.table(sample_1_pseudo_cellularity, "./pseudo_dpclust_files/pseudo_cellular
 
 
 
-runGetDirichletProcessInfo(loci_file = "./pseudo_dpclust_files/pseudo_loci_file/sample_1_pseudo_loci.txt",
-                           allele_frequencies_file = "./pseudo_dpclust_files/pseudo_allele_frequency/sample_1_pseudo_allele_frequency.tsv",
+muts_alleles$CHR <- as.character(muts_alleles$CHR)
+muts_alleles$START <- as.integer(muts_alleles$START)
+
+muts_loci <- muts[,c("chr","start","ref","alt")]
+muts_loci$chr <- as.character(muts_loci$chr)
+muts_loci$start <- as.integer(muts_loci$start)
+
+write.table(muts_alleles, "./pseudo_dpclust_files/pseudo_allele_frequency/sample_1_pseudo_allele_frequency.tsv", col.names = TRUE, quote = FALSE, row.names = FALSE, sep = "\t")
+write.table(muts_loci, "./pseudo_dpclust_files/pseudo_loci_file/sample_1_pseudo_loci.tx")
+
+
+
+
+runGetDirichletProcessInfo(loci_file = "./pseudo_dpclust_files/pseudo_loci_file/sample_1_pseudo_loci.txt", 
+                           allele_frequencies_file = "./pseudo_dpclust_files/pseudo_allele_frequency/sample_1_pseudo_allele_frequency.tsv", 
                            cellularity_file = "./pseudo_dpclust_files/pseudo_cellularity/sample_1_pseudo_cellularity.tsv",
-                           subclone_file = "./pseudo_dpclust_files/pseudo_subclones/sample_1_subclones.txt",
-                           gender = "male",
-                           SNP.phase.file = NA, mut.phase.file = NA,
+                           subclone_file =  "./pseudo_dpclust_files/pseudo_subclones/sample_1_subclones.txt", 
+                           gender='female', 
+                           SNP.phase.file = NULL, 
+                           mut.phase.file = NULL, 
                            output_file = "./dpclust_info/sample_1_dpclust_info")
+
 
 sample_1_dpclust_info <- read.delim("./dpclust_info/sample_1_dpclust_info", sep = "\t", header = TRUE)
 head(sample_1_dpclust_info)
