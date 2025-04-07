@@ -76,7 +76,7 @@ for purity in "${purity_values[@]}"; do
                 n_events=$n_clocks  # Ensure n_events == n_clocks
                 epsilon=0.04
                 # Write to file
-                echo "$n_clocks,$n_events,$purity,$coverage,$tolerance,$max_attempts,$seed,$n_mutations" >> params_config_reviews_3.txt
+                echo "$n_clocks,$n_events,$purity,$coverage,$epsilon,$tolerance,$max_attempts,$seed,$n_mutations" >> params_config_reviews_3.txt
             done
         done
     done

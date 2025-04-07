@@ -21,7 +21,11 @@ all_res = lapply(res_names, function(r) {
   sub_res = lapply(sub_dirs, function(sub_i) {
     fp = paste0(res_folder, r, "/", sub_i)
     
-    if (file.exists(paste0(fp, '/sim.rds'))) {
+    if (file.exists(paste0(fp, '/sim.rds'))&
+        file.exists(paste0(fp, '/res_AmpTimeR.rds'))& 
+        file.exists(paste0(fp, '/res_MutTime.rds'))&
+        file.exists(paste0(fp, '/res_tickTack_h.rds'))&
+        file.exists(paste0(fp, '/res_tickTack_single.rds'))) {
       sim = readRDS(paste0(fp, '/sim.rds'))
       
       cl_at = clusterAmpTimeR(fp)
@@ -34,11 +38,23 @@ all_res = lapply(res_names, function(r) {
       ri_tt = fossil::rand.index(cl_tt, sim$taus_clust)
       ri_tth = fossil::rand.index(cl_tth, sim$taus_clust)
       
-      dplyr::tibble(n_clocks, n_events, purity,coverage, n_mutations, i.iter = sub_i, ri_at, ri_mt, ri_tt, ri_tth)  
+      # if (unique(sim$taus_clust)!=1){
+      #   ri_at = fossil::adj.rand.index(cl_at, sim$taus_clust)
+      #   ri_mt = fossil::adj.rand.index(cl_mt, sim$taus_clust)
+      #   ri_tt = fossil::adj.rand.index(cl_tt, sim$taus_clust)
+      #   ri_tth = fossil::adj.rand.index(cl_tth, sim$taus_clust)
+      # }
+      
+      # if (unique(sim$taus_clust)!=1){
+        dplyr::tibble(n_clocks, n_events, purity,coverage, n_mutations, i.iter = sub_i, ri_at, ri_mt, ri_tt, ri_tth)  
+      # } else {
+        # dplyr::tibble(n_clocks, n_events, purity,coverage, n_mutations, i.iter = sub_i, ri_at, ri_mt, ri_tt, ri_tth)  
+      # }
     }
   }) %>% do.call("bind_rows", .)
   
   sub_res 
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised/clustering_results.RDS")
+saveRDS(all_res, "results_summarised/clustering_results_test.RDS")
+

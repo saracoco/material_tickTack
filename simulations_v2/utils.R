@@ -1,4 +1,4 @@
-
+.libPaths("~/R/rstudio_v3/")
 library(AmplificationTimeR)
 library(BSgenome.Hsapiens.UCSC.hg19)
 library(tidyverse)

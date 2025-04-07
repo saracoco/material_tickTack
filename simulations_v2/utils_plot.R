@@ -43,7 +43,7 @@ plot_over_purity = function(all_res) {
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     scale_y_continuous(transform = "log10") +
-    labs(x = "Purity", y="Percent error", fill="") +
+    labs(x = "Purity", y="Log percent error", fill="") +
     scale_fill_manual(values = color)
 }
 
@@ -60,7 +60,7 @@ plot_over_coverage = function(all_res) {
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     scale_y_continuous(transform = "log10") +
-    labs(x = "Coverage", y="Percent error", fill="") +
+    labs(x = "Coverage", y="Log percent error", fill="") +
     scale_fill_manual(values = color)
 }
 
@@ -78,7 +78,7 @@ plot_over_nmutations = function(all_res) {
     geom_boxplot(lwd=.3, outlier.size = .5) +
     theme_bw() +
     scale_y_continuous(transform = "log10") +
-    labs(x = "N mutations", y="Percent error", fill="") +
+    labs(x = "N mutations", y="Log percent error", fill="") +
     scale_fill_manual(values = color)
 }
 
@@ -97,7 +97,7 @@ plot_nclocks_v_nevents = function(all_res) {
     theme_bw() +
     ggh4x::facet_nested(~"N tau"+n_clocks) +
     scale_y_continuous(transform = "log10") +
-    labs(x = "N segments", y="Percent error", fill="") +
+    labs(x = "N segments", y="Log percent error", fill="") +
     scale_fill_manual(values = color)
 }
 
@@ -120,7 +120,6 @@ plot_rand_index = function(res_clust) {
       axis.text.x = element_blank()
     )
 }
-
 
 
 

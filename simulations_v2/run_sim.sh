@@ -9,22 +9,50 @@
 #SBATCH --time=48:00:00
 #SBATCH --output=out/%a
 #SBATCH --error=err/%a
-#SBATCH --array=1-1500
+#SBATCH --array=1-500
 
 module load R
 echo $SLURM_ARRAY_TASK_ID
 
-n_clocks=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$1; exit }" params_config.txt)
-n_events=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$2; exit }" params_config.txt)
-purity=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$3; exit }" params_config.txt)
-coverage=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$4; exit }" params_config.txt)
-epsilon=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$5; exit }" params_config.txt)
-tolerance=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$6; exit }" params_config.txt)
-max_attempts=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$7; exit }" params_config.txt)
-seed=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$8; exit }" params_config.txt)
-n_mutations=$(awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print \$9; exit }" params_config.txt)
+LINE_NUMBER=$((SLURM_ARRAY_TASK_ID + 1000))
 
-awk -F',' "NR==${SLURM_ARRAY_TASK_ID} { print ; exit }" params_config_reviews_1.txt >> tickTack_sim_1_${n_clocks}_${n_events}_${purity}_${coverage}/config
+n_clocks=$(awk -F',' "NR==${LINE_NUMBER} { print \$1; exit }" params_config_reviews_1.txt)
+n_events=$(awk -F',' "NR==${LINE_NUMBER} { print \$2; exit }" params_config_reviews_1.txt)
+purity=$(awk -F',' "NR==${LINE_NUMBER} { print \$3; exit }" params_config_reviews_1.txt)
+coverage=$(awk -F',' "NR==${LINE_NUMBER} { print \$4; exit }" params_config_reviews_1.txt)
+epsilon=$(awk -F',' "NR==${LINE_NUMBER} { print \$5; exit }" params_config_reviews_1.txt)
+tolerance=$(awk -F',' "NR==${LINE_NUMBER} { print \$6; exit }" params_config_reviews_1.txt)
+max_attempts=$(awk -F',' "NR==${LINE_NUMBER} { print \$7; exit }" params_config_reviews_1.txt)
+seed=$(awk -F',' "NR==${LINE_NUMBER} { print \$8; exit }" params_config_reviews_1.txt)
+n_mutations=$(awk -F',' "NR==${LINE_NUMBER} { print \$9; exit }" params_config_reviews_1.txt)
+
+awk -F',' "NR==${LINE_NUMBER} { print ; exit }" params_config_reviews_1.txt >> tickTack_sim_1_${n_clocks}_${n_events}_${purity}_${coverage}/config
+
+# n_clocks=$(awk -F',' "NR==${LINE_NUMBER} { print \$1; exit }" params_config_reviews_2.txt)
+# n_events=$(awk -F',' "NR==${LINE_NUMBER} { print \$2; exit }" params_config_reviews_2.txt)
+# purity=$(awk -F',' "NR==${LINE_NUMBER} { print \$3; exit }" params_config_reviews_2.txt)
+# coverage=$(awk -F',' "NR==${LINE_NUMBER} { print \$4; exit }" params_config_reviews_2.txt)
+# epsilon=$(awk -F',' "NR==${LINE_NUMBER} { print \$5; exit }" params_config_reviews_2.txt)
+# tolerance=$(awk -F',' "NR==${LINE_NUMBER} { print \$6; exit }" params_config_reviews_2.txt)
+# max_attempts=$(awk -F',' "NR==${LINE_NUMBER} { print \$7; exit }" params_config_reviews_2.txt)
+# seed=$(awk -F',' "NR==${LINE_NUMBER} { print \$8; exit }" params_config_reviews_2.txt)
+# n_mutations=$(awk -F',' "NR==${LINE_NUMBER} { print \$9; exit }" params_config_reviews_2.txt)
+# 
+# awk -F',' "NR==${LINE_NUMBER} { print ; exit }" params_config_reviews_2.txt >> tickTack_sim_2_${n_clocks}_${n_events}_${purity}_${coverage}/config
+
+# n_clocks=$(awk -F',' "NR==${LINE_NUMBER} { print \$1; exit }" params_config_reviews_3.txt)
+# n_events=$(awk -F',' "NR==${LINE_NUMBER} { print \$2; exit }" params_config_reviews_3.txt)
+# purity=$(awk -F',' "NR==${LINE_NUMBER} { print \$3; exit }" params_config_reviews_3.txt)
+# coverage=$(awk -F',' "NR==${LINE_NUMBER} { print \$4; exit }" params_config_reviews_3.txt)
+# epsilon=$(awk -F',' "NR==${LINE_NUMBER} { print \$5; exit }" params_config_reviews_3.txt)
+# tolerance=$(awk -F',' "NR==${LINE_NUMBER} { print \$6; exit }" params_config_reviews_3.txt)
+# max_attempts=$(awk -F',' "NR==${LINE_NUMBER} { print \$7; exit }" params_config_reviews_3.txt)
+# seed=$(awk -F',' "NR==${LINE_NUMBER} { print \$8; exit }" params_config_reviews_3.txt)
+# n_mutations=$(awk -F',' "NR==${LINE_NUMBER} { print \$9; exit }" params_config_reviews_3.txt)
+# 
+# awk -F',' "NR==${LINE_NUMBER} { print ; exit }" params_config_reviews_3.txt >> tickTack_sim_3_${n_clocks}_${n_events}_${purity}_${coverage}/config
+
+
 
 echo $n_clocks
 echo $n_events
@@ -36,6 +64,6 @@ echo $max_attempts
 echo $seed
 echo $n_mutations
 
-echo "NR==${SLURM_ARRAY_TASK_ID}"
+echo "NR==${LINE_NUMBER}"
 
 Rscript 01_sim_and_fit.R ${n_clocks} ${n_events} ${purity} ${coverage} ${epsilon} ${tolerance} ${max_attempts} ${seed} ${n_mutations}

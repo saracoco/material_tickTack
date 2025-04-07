@@ -1,10 +1,10 @@
-
+.libPaths("~/R/rstudio_v3/")
 rm(list = ls())
 require(tidyverse)
 require(patchwork)
 source("utils_plot.R")
 
-all_res = readRDS("results_summarised/scores_randIndex.RDS")
+all_res = readRDS("results_summarised/scores_randIndex_test.RDS")
 all_res %>% 
   ggplot(mapping = aes(x=score, y=RandIndex, col=score)) +
   geom_boxplot() +
@@ -22,6 +22,7 @@ df_scores = lapply(seq(.01, .99, length = 20) , function(q) {
     dplyr::mutate(rank = dense_rank(-m)) %>% 
     dplyr::ungroup() %>% 
     dplyr::group_by(score) %>% 
+    dplyr::filter(score=="AIC"| score=="ICL" | score=="BIC" | score=="LOO" | score=="Log_lik")%>%
     dplyr::summarise(avg_rank = mean(rank)) %>% 
     dplyr::arrange(avg_rank) %>% 
     dplyr::mutate(q = q)
@@ -49,6 +50,7 @@ df_scores = lapply(seq(.01, .99, length = 20) , function(q) {
     dplyr::mutate(rank = dense_rank(-m)) %>% 
     dplyr::ungroup() %>% 
     dplyr::group_by(score) %>% 
+    dplyr::filter(score=="AIC"| score=="ICL" | score=="BIC" | score=="LOO" | score=="Log_lik")%>%
     dplyr::summarise(avg_rank = mean(rank)) %>% 
     dplyr::arrange(avg_rank) %>% 
     dplyr::mutate(q = q)

@@ -1,4 +1,4 @@
-
+.libPaths("~/R/rstudio_v3/")
 rm(list = ls())
 require(tidyverse)
 
@@ -40,7 +40,7 @@ all_res = lapply(res_names, function(r) {
   sub_res
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised/whole_res.RDS")
+saveRDS(all_res, "results_summarised/whole_res_test.RDS")
 
 
 # Parse cluster rules results
@@ -94,4 +94,4 @@ all_res = lapply(res_names, function(r) {
   sub_res  
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised/scores_randIndex.RDS")
+saveRDS(all_res, "results_summarised/scores_randIndex_test.RDS")
