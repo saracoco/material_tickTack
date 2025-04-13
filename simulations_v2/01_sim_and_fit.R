@@ -51,7 +51,9 @@ for (i.iter in 1:10) {
   }
   
   # Run fits and catch errors
-  res_AmpTimeR <- safe_run(fit_AmpTimeR(sim), "fit_AmpTimeR")
+  mult_path <- paste0(sub_dir,"/sample_1_dpclust_info")
+  get_multiplicities(sim, purity, mult_path, sub_dir)
+  res_AmpTimeR <- safe_run(fit_AmpTimeR(sim,mult_path), "fit_AmpTimeR")
   res_MutTime  <- safe_run(fit_MutTimeR(sim, pi), "fit_MutTimeR")
   res_tickTack_single <- safe_run(fit_tickTack_single(sim, pi, MIN_MUTATIONS), "fit_tickTack_single")
   res_tickTack_h <- safe_run(fit_tickTack_h(sim, pi, MIN_MUTATIONS, INIT = TRUE, tolerance = tolerance, max_attempts = max_attempts), "fit_tickTack_h")
@@ -65,8 +67,7 @@ for (i.iter in 1:10) {
       tau_AmpTimeR = res_AmpTimeR$tau,
       tau_MutTimeR = res_MutTime$cn_timed$time,
       tau_tickTack = res_tickTack_single$summarized_results$tau_mean,
-      tau_tickTack_h = res_tickTack_h$results_model_selection$best_fit$summarized_results$clock_mean
-    )
+      tau_tickTack_h = res_tickTack_h$results_model_selection$best_fit$summarized_results$clock_mean   )
     
     saveRDS(merged_res, paste0(sub_dir, "/merged_res.rds"))
   }
