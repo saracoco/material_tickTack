@@ -11,6 +11,7 @@
 #SBATCH --error=err/clustering
 
 module load R
- Rscript 02_parse_results.R
- Rscript 02a_cluster_other_methods.g
+# Rscript 02_parse_results.R
+ Rscript 02a_cluster_other_methods.R
 # Rscript 02b_cluster_other_methods_alternative_algorithms.R
+ Rscript 03b_analysis.R 

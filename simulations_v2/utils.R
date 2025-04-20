@@ -8,6 +8,8 @@ require(transport)
 library(cluster)
 #library(BSgenome.Hsapiens.UCSC.hg38)
 library(tickTack)
+library(dpclust3p)
+
 
 
 generate_multiplicities = function(k, tau, N_mutations, m=1) {
@@ -96,11 +98,11 @@ simulate_dataset = function(N_events, N_clocks, N_mutations, pi, coverage, sigma
   list(cn=sim_cn, mult=sim_mult, muts=sim_muts, true_taus = taus, taus_clust=taus_clust)
 }
 
-fit_AmpTimeR = function(sim) {
+fit_AmpTimeR = function(sim, mult_path) {
   N_events = nrow(sim$cn)
   lapply(1:N_events, function(idx) {
     cn = sim$cn[idx, ]
-    mult = sim$mult
+    mult = read.delim(mult_path, sep = "\t", header = TRUE)
     muts = sim$muts %>% dplyr::select(chr, start, end, ref, alt)
     
     segment_time <- time_amplification(
@@ -321,6 +323,53 @@ plot_heatmap <- function(matrix_data,
     )
 }
 
+
+
+get_multiplicities <- function(sim, purity, mult_path, subdir){
+  
+  muts <- sim$muts
+  df_counts <- muts %>%
+    mutate(WT.count = DP - NV,
+           mut.count = NV)
+  
+  info_counts <- GRanges(
+    seqnames = paste0("chr", df_counts$chr),
+    ranges = IRanges(start = df_counts$start, end = df_counts$end),
+    strand = "*",
+    WT.count = df_counts$WT.count,
+    mut.count = df_counts$mut.count
+  )
+  
+  cn <- sim$cn%>% 
+    mutate(CHR = chr, START=startpos, frac_1A=1)%>%
+    dplyr::select("CHR","START","nMaj1_A","nMin1_A")
+  
+  
+  info_counts <- GRanges(
+    seqnames = paste0(df_counts$chr),
+    ranges = IRanges(start = df_counts$start, end = df_counts$end),
+    strand = "*",
+    WT.count = df_counts$WT.count,
+    mut.count = df_counts$mut.count
+  )
+  
+  cn <- sim$cn %>% 
+    #dplyr::select("CHR","START","nMaj1_A","nMin1_A") %>% 
+    dplyr::mutate(ntot = nMaj1_A + nMin1_A, frac1_A = 1, nMaj2_A=NA, nMin2_A=NA, frac2_A=NA)
+  
+  write.table(cn, paste0(subdir,"/sample_1_subclones.txt"), col.names = TRUE, quote = FALSE, row.names = FALSE, sep = "\t")
+  
+  dpclust3p:::GetDirichletProcessInfo(mult_path,
+                                      purity,
+                                      info_counts, 
+                                      paste0(subdir,"/sample_1_subclones.txt"),
+                                      T,
+                                      SNP.phase.file = "NA",
+                                      mut.phase.file = NULL)
+  # rm("./my_pseudo_dpclust_files")
+}
+
+
 compute_metrics <- function(posterior_draws) {
   # Input: 
   # posterior_draws: A list where each element contains posterior draws for a sample
@@ -480,6 +529,7 @@ compute_overlap_matrix <- function(intervals) {
         length1 <- b1 - a1
         length2 <- b2 - a2
         
+
         if (length1 > 0 && length2 > 0) {
           overlap_matrix[i, j] <- intersection_length / min(length1, length2)
         } else {
@@ -496,10 +546,15 @@ compute_overlap_matrix <- function(intervals) {
 clusterAmpTimeR = function(fp) {
   res = readRDS(paste0(fp, '/res_AmpTimeR.rds'))
   intervals = cbind(res$tau_low, res$tau_high)
+  na_indices <- which(apply(intervals, 1, function(x) any(is.na(x))))
+  if (length(na_indices)!=0){
+    intervals <- intervals[-na_indices, , drop = FALSE]
+  }
   similarity_matrix = compute_overlap_matrix(intervals)
   best_k = hierarchical_optimal_clusters(1-similarity_matrix, max_clusters = nrow(intervals) - 1)$optimal_clusters
-  clusters = cluster_hierarchical(1 - similarity_matrix, num_clusters = best_k)  
-  clusters
+  clusters = cluster_hierarchical(1 - similarity_matrix, num_clusters = best_k) 
+  return(  list(clusters=clusters, na_indices=na_indices) 
+)
 }
 
 # Cluster MutTimeR
