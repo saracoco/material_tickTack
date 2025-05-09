@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=PCAWG_BRCA_timing
+#SBATCH --job-name=PCAWG_timing
 #SBATCH --partition=THIN
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=24
