@@ -1,5 +1,4 @@
-
-rm(list=ls())
+rm(list = ls())
 library(dplyr)
 library(ggplot2)
 library(parallel)
@@ -8,31 +7,55 @@ require(tidyverse)
 library(tickTack)
 source("utils.R")
 
+# Read command-line arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 3) {
+  stop("Please provide PCAWG_INFO_DIR and TICK_TACK_FITS_DIR and OUTPUT_DIR as command line arguments.")
+}
+
+PCAWG_INFO_DIR = args[1]
+TICK_TACK_FITS_DIR <- args[2]
+OUTPUT_DIR <- args[3]
+
+cat("PCAWG info directory:", PCAWG_INFO_DIR, "\n")
+cat("Output directory:", OUTPUT_DIR, "\n")
+
+if (!dir.exists(PCAWG_INFO_DIR)) {
+  stop(paste0("Input dir: ", PCAWG_INFO_DIR," does not exist"))
+}
+
+if (!dir.exists(TICK_TACK_FITS_DIR)) {
+  stop(paste0("Input dir: ", TICK_TACK_FITS_DIR," does not exist"))
+}
+
+if (!dir.exists(OUTPUT_DIR)) {
+  message("Creating output dir")
+  dir.create(OUTPUT_DIR, recursive = T)
+}
+
 ttypes <- read.delim("data/TableS3_panorama_driver_mutations_ICGC_samples.public.tsv", sep = "\t") %>% 
   dplyr::select(sample_id, ttype) %>% 
   dplyr::distinct()
 
-results_path <- "/results_whole/"
-fits_path = "/data/clonal_analysis_PCAWG/"
+#results_path <- "/results/"
+#fits_path = "/data/clonal_analysis_PCAWG/"
 
-results_path <- "/results/"
-fits_path = "/data/clonal_analysis_PCAWG/"
-
-IDs <- list.files(results_path)
-IDs = IDs[!grepl("single", IDs)]
+IDs <- list.files(TICK_TACK_FITS_DIR)
+#IDs = IDs[!grepl("single", IDs)]
 
 id = IDs[1]
 RES <- lapply(IDs, function(id) {
   print(which(IDs == id) / length(IDs) * 100)
   
   tryCatch({
-    results = readRDS(paste0(results_path, id))
-    fit = readRDS(paste0(fits_path, unlist(strsplit(id, ".rds")), "/fit.rds"))
-    tumour_name = (unique(fit$snvs$ttype) %>% na.omit())[1]
-    ploidy = fit$ploidy
-    ttype = strsplit(fit$snvs$project_code, "-")[[1]][1]
+    #results = readRDS(paste0(results_path, id))
+    tickTack_res = readRDS(file.path(TICK_TACK_FITS_DIR, id))
+    pcawg_data = readRDS(paste0(PCAWG_INFO_DIR, unlist(strsplit(id, ".rds")), "/fit.rds"))
+    tumour_name = (unique(pcawg_data$snvs$ttype) %>% na.omit())[1]
+    ploidy = pcawg_data$ploidy
+    ttype = strsplit(pcawg_data$snvs$project_code, "-")[[1]][1]
     df = dplyr::tibble(sample_id=id, ttype=ttype, ploidy=ploidy, tumour_name=tumour_name)
-    return(dplyr::bind_cols(df, parse_summarized_results(results)))
+    return(dplyr::bind_cols(df, parse_summarized_results(tickTack_res)))
   }, error = function(e) {
     # Error handling
     print(paste0("An error occurred:", id))
@@ -41,10 +64,9 @@ RES <- lapply(IDs, function(id) {
   
 }) %>% do.call("bind_rows", .)
 
-saveRDS(RES, "results/summary_all_samples.rds")
-RES = readRDS("results/summary_all_samples.rds")
-RES$ttype %>% unique()
-RES$tumour_name %>% unique()
+
+saveRDS(RES, file.path(OUTPUT_DIR, "summary_all_samples.rds"))
+RES = readRDS(file.path(OUTPUT_DIR, "summary_all_samples.rds"))
 
 RES %>% 
   dplyr::select(ttype, tumour_name) %>% 
@@ -98,4 +120,4 @@ genes_annotation = lapply(1:nrow(RESfiltered), function(i) {
 }) %>% do.call("bind_rows", .)
 
 RES_w_genes = bind_cols(RESfiltered, genes_annotation)
-saveRDS(RES_w_genes, "results/res_w_onco_and_ts.rds")
+saveRDS(RES_w_genes, file.path(OUTPUT_DIR, "res_w_onco_and_ts.rds"))
