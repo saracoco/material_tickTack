@@ -16,27 +16,18 @@
 # - psudotimes corresponding to each model
 
 
-compute_pseudotimes = function(starting='1:1', target=)
+compute_pseudotimes = function(starting='1:1', target)
 {
-  # Are we starting from a karyo that lacks one of the alleles? (in which case I cannot amplify that allele)
-  any_LOH = (strsplit(starting, split = ':')[[1]] == "0") %>% any
-  # Are there LOHs in the final karyotypes?
-  no_LOH1 = (strsplit(karyotype_1, split = ':')[[1]] != "0") %>% all
-  no_LOH2 = (strsplit(karyotype_2, split = ':')[[1]] != "0") %>% all
-  # If there is an LOH in the starting karyotype but the final karyotypes don't have LOHs stop. There is
-  # no way in which is possible to reach those karytypes from an LOH
-  if(any_LOH & (no_LOH1 | no_LOH2))
-  {
-    cli::cli_abort("No evolution model can reach {.field {karyotype_1}} /
-    {.field {karyotype_2}} from {.field {starting}}.
-                   Rerun with with different parameters, aborting!")
-  }
+  # any_LOH = (strsplit(starting, split = ':')[[1]] == "0") %>% any
+  # no_LOH1 = (strsplit(karyotype_1, split = ':')[[1]] != "0") %>% all
+  # no_LOH2 = (strsplit(karyotype_2, split = ':')[[1]] != "0") %>% all
+  # if(any_LOH & (no_LOH1 | no_LOH2))
+  # {
+  #   cli::cli_abort("No evolution model can reach {.field {karyotype_1}} /
+  #   {.field {karyotype_2}} from {.field {starting}}.
+  #                  Rerun with with different parameters, aborting!")
+  # }
   
-  ####### Utility functions: skip this and go to the applications of these functions,
-  ####### come back when you encounter each of them to understand what they do 
-  # getters
-  # outputs the vector of mutations of the dataframe copy state or referred 
-  # to a single allele
   get_mutations = function(copy_state, allele = NULL){
     if(is.null(allele))
       mutations = copy_state %>% pull(mutations) %>% unlist()
@@ -50,7 +41,6 @@ compute_pseudotimes = function(starting='1:1', target=)
     copy_state$allele
   }
   
-  # generate a new mutation ID
   new_mutation = function(copy_state){
     used = copy_state %>% get_mutations()
     id = NULL
@@ -62,9 +52,6 @@ compute_pseudotimes = function(starting='1:1', target=)
     return(id)
   }
   
-  # Add mutations to all alleles
-  # adds a new mutation (unique string of characters) to 
-  # each row of the dataframe copystate
   mutation = function(copy_state){
     for(i in 1:nrow(copy_state))
     {
@@ -161,14 +148,10 @@ compute_pseudotimes = function(starting='1:1', target=)
     copy_state %>% nrow()
   }
   
-  # Evolution models - this is the key function 
-  # takes in input a copy_state df and a target, and creates a list of dataframes 
-  # with all the possible 1-step evolutions that leads to the target
+  # Create a nested list of lists 
   evolve = function(copy_state, target)
   {
-    # If the copystate is already the same as the target, return the mutated copystate
     if(copy_state %>% as_karyotype() == target) return(copy_state %>% mutation() %>% list())
-    # Compute the maximum number of steps
     cap = (target %>% strsplit(split = ':'))[[1]] %>% as.numeric %>% sum
     cap = 2 * cap
     
@@ -225,79 +208,79 @@ compute_pseudotimes = function(starting='1:1', target=)
     else evolve(copy_state, target)[[1]]
   }
   
-  # Compute peaks
-  get_peaks = function(clone_1, clone_2, CCF_1, purity)
-  {
-    c(
-      clone_1 %>% get_mutations(),
-      clone_2 %>% get_mutations()
-    ) %>%
-      table()
-    
-    m_c1 = clone_1 %>% get_mutations() %>% table() %>% as_tibble() %>%
-      mutate(x = n * CCF_1,
-             karyotype_1 = clone_1 %>% as_karyotype(),
-             genotype_1 = clone_1 %>% get_alleles() %>% sort() %>% paste(collapse = '')
-      )
-    colnames(m_c1)[1] = 'mutation'
-    
-    m_c2 = clone_2 %>% get_mutations() %>% table() %>% as_tibble() %>%
-      mutate(x = n * (1 - CCF_1),
-             karyotype_2 = clone_2 %>% as_karyotype(),
-             genotype_2 = clone_2 %>% get_alleles() %>% sort() %>% paste(collapse = '')
-      )
-    colnames(m_c2)[1] = 'mutation'
-    
-    denominator = 2 * (1-purity) +
-      purity * ( CCF_1 * (clone_1 %>% as_ploidy()) + (1 - CCF_1) * (clone_2 %>% as_ploidy()))
-    
-    m_c1 %>%
-      dplyr::full_join(m_c2, by = 'mutation', suffix = c('.clone_1', '.clone_2')) %>%
-      tidyr::replace_na(list(n.clone_1 = 0, x.clone_1 = 0, n.clone_2 = 0, x.clone_2 = 0)) %>%
-      dplyr::mutate(peak = (x.clone_1 + x.clone_2) * purity) %>%
-      dplyr::distinct(peak, .keep_all = TRUE) %>%
-      dplyr::mutate(peak = peak/denominator) %>%
-      dplyr::select(mutation, karyotype_1, genotype_1, karyotype_2, genotype_2, n.clone_1, n.clone_2, peak) %>%
-      dplyr::arrange(peak)
-  }
+  # # Compute peaks
+  # get_peaks = function(clone_1, clone_2, CCF_1, purity)
+  # {
+  #   c(
+  #     clone_1 %>% get_mutations(),
+  #     clone_2 %>% get_mutations()
+  #   ) %>%
+  #     table()
+  #   
+  #   m_c1 = clone_1 %>% get_mutations() %>% table() %>% as_tibble() %>%
+  #     mutate(x = n * CCF_1,
+  #            karyotype_1 = clone_1 %>% as_karyotype(),
+  #            genotype_1 = clone_1 %>% get_alleles() %>% sort() %>% paste(collapse = '')
+  #     )
+  #   colnames(m_c1)[1] = 'mutation'
+  #   
+  #   m_c2 = clone_2 %>% get_mutations() %>% table() %>% as_tibble() %>%
+  #     mutate(x = n * (1 - CCF_1),
+  #            karyotype_2 = clone_2 %>% as_karyotype(),
+  #            genotype_2 = clone_2 %>% get_alleles() %>% sort() %>% paste(collapse = '')
+  #     )
+  #   colnames(m_c2)[1] = 'mutation'
+  #   
+  #   denominator = 2 * (1-purity) +
+  #     purity * ( CCF_1 * (clone_1 %>% as_ploidy()) + (1 - CCF_1) * (clone_2 %>% as_ploidy()))
+  #   
+  #   m_c1 %>%
+  #     dplyr::full_join(m_c2, by = 'mutation', suffix = c('.clone_1', '.clone_2')) %>%
+  #     tidyr::replace_na(list(n.clone_1 = 0, x.clone_1 = 0, n.clone_2 = 0, x.clone_2 = 0)) %>%
+  #     dplyr::mutate(peak = (x.clone_1 + x.clone_2) * purity) %>%
+  #     dplyr::distinct(peak, .keep_all = TRUE) %>%
+  #     dplyr::mutate(peak = peak/denominator) %>%
+  #     dplyr::select(mutation, karyotype_1, genotype_1, karyotype_2, genotype_2, n.clone_1, n.clone_2, peak) %>%
+  #     dplyr::arrange(peak)
+  # }
   
-  # Models 
-  # Creates the branching evolution model, left and right are initialised as karyotype_1 and karyotype_2
-  branching_evolution = function(starting, left, right, CCF_1, purity)
-  {
-    # Initialise the evolution - creates a dataframe with alleles and corresponding mutations 
-    start = initial_state(starting)
-    # Since the evolution is branched, the two branches will develop independently 
-    # The evolve function creates a list of dataframes, each storing 
-    # the allele and mutation information of one of the corresponding trajectory
-    branch_left = start %>% evolve(left) 
-    branch_right = start %>% evolve(right)
-    
-    solutions = tidyr::expand_grid(L = seq_along(branch_left), R = seq_along(branch_right))
-    solutions = lapply(1:nrow(solutions), function(i) {
-      get_peaks(
-        clone_1 = branch_left[[solutions$L[i]]],
-        clone_2 = branch_right[[solutions$R[i]]],
-        CCF_1,
-        purity)
-    })
-    
-    solutions_id = lapply(solutions, function(x) x$peak %>% paste(collapse= ';'))
-    solutions = solutions[!duplicated(solutions_id)]
-    
-    lapply(solutions, function(x){
-      geno_1 = x$genotype_1
-      geno_1 = geno_1[!is.na(geno_1)] %>% unique
-      geno_2 = x$genotype_2
-      geno_2 = geno_2[!is.na(geno_2)] %>% unique
-      
-      x$genotype_initial = start %>% get_alleles() %>% sort() %>% paste(collapse = '')
-      x$model = 'branching'
-      x$model_id = paste0(x$genotype_initial[1], " -> ", geno_1, " | ", geno_2)
-      x %>% mutate(role = ifelse(is.na(karyotype_1) | is.na(karyotype_2), "private", 'shared'))
-    })
-    
-  }
+  # # Models 
+  # # Creates the branching evolution model, left and right are initialised as karyotype_1 and karyotype_2
+  # branching_evolution = function(starting, left, right, CCF_1, purity)
+  # {
+  #   # Initialise the evolution - creates a dataframe with alleles and corresponding mutations 
+  #   start = initial_state(starting)
+  #   # Since the evolution is branched, the two branches will develop independently 
+  #   # The evolve function creates a list of dataframes, each storing 
+  #   # the allele and mutation information of one of the corresponding trajectory
+  #   branch_left = start %>% evolve(left) 
+  #   branch_right = start %>% evolve(right)
+  #   
+  #   solutions = tidyr::expand_grid(L = seq_along(branch_left), R = seq_along(branch_right))
+  #   solutions = lapply(1:nrow(solutions), function(i) {
+  #     get_peaks(
+  #       clone_1 = branch_left[[solutions$L[i]]],
+  #       clone_2 = branch_right[[solutions$R[i]]],
+  #       CCF_1,
+  #       purity)
+  #   })
+  #   
+  #   solutions_id = lapply(solutions, function(x) x$peak %>% paste(collapse= ';'))
+  #   solutions = solutions[!duplicated(solutions_id)]
+  #   
+  #   lapply(solutions, function(x){
+  #     geno_1 = x$genotype_1
+  #     geno_1 = geno_1[!is.na(geno_1)] %>% unique
+  #     geno_2 = x$genotype_2
+  #     geno_2 = geno_2[!is.na(geno_2)] %>% unique
+  #     
+  #     x$genotype_initial = start %>% get_alleles() %>% sort() %>% paste(collapse = '')
+  #     x$model = 'branching'
+  #     x$model_id = paste0(x$genotype_initial[1], " -> ", geno_1, " | ", geno_2)
+  #     x %>% mutate(role = ifelse(is.na(karyotype_1) | is.na(karyotype_2), "private", 'shared'))
+  #   })
+  #   
+  # }
   
   linear_evolution = function(starting, first_child, second_child, CCF_1, purity)
   {
@@ -335,8 +318,8 @@ compute_pseudotimes = function(starting='1:1', target=)
   
   ############### Apply the models
   
-  b_model = suppressWarnings(branching_evolution(starting, karyotype_1, karyotype_2, CCF_1, purity)) %>%
-    Reduce(f = bind_rows)
+  # b_model = suppressWarnings(branching_evolution(starting, karyotype_1, karyotype_2, CCF_1, purity)) %>%
+  #   Reduce(f = bind_rows)
   
   l1_model = NULL
   if((grepl("0", karyotype_1) & grepl("0", karyotype_2)) | !grepl("0", karyotype_1))
