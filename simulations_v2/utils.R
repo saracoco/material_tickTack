@@ -98,6 +98,50 @@ simulate_dataset = function(N_events, N_clocks, N_mutations, pi, coverage, sigma
   list(cn=sim_cn, mult=sim_mult, muts=sim_muts, true_taus = taus, taus_clust=taus_clust)
 }
 
+fit_gritic = function(sim, pi, min_mutations, IS_WGD=TRUE, ref = 'hg19') {
+  
+  N_events = nrow(sim$cn)
+  
+  cn <- sim$cn %>% 
+    dplyr::rename(Major=nMaj1_A, minor=nMin1_A, from=startpos, to=endpos)
+  
+  muts <- sim$muts %>% 
+    dplyr::rename(from=start, to=end)
+  
+  
+  input_data_CNAqc <- CNAqc::init(mutations=muts, 
+                                  cna = cn, 
+                                  purity = pi, 
+                                  ref = ref)
+  x = list(
+    cna = cn, 
+    mutations = muts,
+    metadata = dplyr::tibble(sample = "sample", purity=pi)
+  )
+  # input_data = list (mutations=muts, cna = cn, purity=pi)
+  
+  data_GRITIC = convert_CNAqc_to_GRITIC(input_data_CNAqc) 
+  
+  write_tsv(data_GRITIC$mut, "mutation_tsv.tsv")
+  write_tsv(data_GRITIC$cn, "cna_tsv.tsv")
+  
+  example_gritic <- reticulate::import_from_path("run_gritic_module", path = ".")
+  example_gritic$run_gritic(
+    mutation_path = "./mutation_tsv.tsv",
+    copy_number_path = "./cna_tsv.tsv",
+    purity = pi,
+    sample_id = "S123",
+    output_dir = "results_gritic_example_PCAWG/",
+    wgd_status = IS_WGD,
+    penalty = FALSE,
+    subclone_path = NULL,
+    sex = "XY",
+    plot_trees = TRUE
+  )
+  
+  
+}
+
 fit_AmpTimeR = function(sim, mult_path) {
   N_events = nrow(sim$cn)
   lapply(1:N_events, function(idx) {
