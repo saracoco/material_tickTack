@@ -631,3 +631,14 @@ cluster_tickTack_h = function(fp) {
   res = readRDS(paste0(fp, '/res_tickTack_h.rds'))
   res$results_model_selection$best_fit$summarized_results$clock_mean
 }
+
+
+# Cluster Gritic
+cluster_GRITIC = function(fp) {
+  res = readRDS(paste0(fp, '/res_gritic.rds'))
+  intervals = cbind(res$Timing_CI_Low, res$Timing_CI_High)
+  similarity_matrix = compute_overlap_matrix(intervals)
+  best_k = hierarchical_optimal_clusters(1 - similarity_matrix, max_clusters = nrow(similarity_matrix) - 1)$optimal_clusters
+  clusters = cluster_hierarchical(1 - similarity_matrix, num_clusters = best_k)  
+  clusters  
+}
