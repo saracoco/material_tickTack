@@ -30,7 +30,7 @@ if (!dir.exists(main_dir)) {
   dir.create(main_dir)  
 }
 
-for (i.iter in 1:5) {
+for (i.iter in 1:10) {
   sub_dir = paste0(main_dir, i.iter)
   dir.create(sub_dir)
   

@@ -48,7 +48,7 @@ if (!dir.exists(main_dir)) {
   dir.create(main_dir)  
 }
 
-for (i.iter in 1:5) {
+for (i.iter in 1:10) {
   sub_dir = paste0(main_dir, i.iter)
 
   error_log <- file(paste0(sub_dir, "/error_log_2.txt"), open = "wt")
