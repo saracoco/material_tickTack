@@ -19,7 +19,7 @@ all_res = lapply(res_names, function(r) {
 
   sub_dirs = list.files(paste0(res_folder, r))
   sub_i = sub_dirs[1]
-  fp = "results_gritic/sim_15_40_0.9_5_50/1"
+  # fp = "results_gritic/sim_15_40_0.9_5_50/1"
   
   sub_res = lapply(sub_dirs, function(sub_i) {
     fp = paste0(res_folder, r, "/", sub_i)
@@ -41,7 +41,7 @@ all_res = lapply(res_names, function(r) {
   sub_res
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised/whole_res_test.RDS")
+saveRDS(all_res, "results_summarised_gritic/whole_res_test.RDS")
 
 
 # Parse cluster rules results
@@ -95,4 +95,4 @@ all_res = lapply(res_names, function(r) {
   sub_res  
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised/scores_randIndex_test.RDS")
+saveRDS(all_res, "results_summarised_gritic/scores_randIndex_test.RDS")

@@ -3,7 +3,7 @@
 rm(list = ls())
 source("utils.R")
 
-res_folder = "results_gritic/" 
+res_folder = "results/" 
 res_names = list.files(res_folder)
 
 all_res = lapply(res_names, function(r) {
@@ -64,7 +64,7 @@ all_res = lapply(res_names, function(r) {
   sub_res
   }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised_gritic/clustering_results_test_nogritic.RDS")
+saveRDS(all_res, "results_summarised/clustering_results_test_nogritic.RDS")
 
 
 

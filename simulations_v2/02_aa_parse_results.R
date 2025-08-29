@@ -2,7 +2,7 @@
 rm(list = ls())
 require(tidyverse)
 
-res_folder = "results_gritic/" 
+res_folder = "results/" 
 res_names = list.files(res_folder)
 
 # r = res_names[1]
@@ -40,7 +40,7 @@ all_res = lapply(res_names, function(r) {
   sub_res
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised_gritic/whole_res_test_nogritic.RDS")
+saveRDS(all_res, "results_summarised/whole_res_test.RDS")
 
 
 # Parse cluster rules results
@@ -94,4 +94,4 @@ all_res = lapply(res_names, function(r) {
   sub_res  
 }) %>% do.call("bind_rows", .)
 
-saveRDS(all_res, "results_summarised_gritic/scores_randIndex_test_nogritic.RDS")
+saveRDS(all_res, "results_summarised/scores_randIndex_test.RDS")
